@@ -10,9 +10,6 @@ const engine = new Engine();
 
 engine.start();
 
-// When adding body, need to increment lastBodyID and pass to body
-
-
 log = function(data) {
 	ipc.send('display', data);
 };
@@ -52,4 +49,4 @@ setTimeout(function() {
 //var map = MapFactory.createV4();
 
 //Game.ImageConverter.encode();
-//Game.start(); // TURN BACK ON
+//Game.start();

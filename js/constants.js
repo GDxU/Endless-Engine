@@ -11,10 +11,6 @@ constants.COLLIDER = {
 	PARTITION_SIZE: 400
 };
 
-constants.VIEWPORT = {
-	EDGE_BUFFER: 50
-};
-
 constants.LISTENER = {
 	EVENT_TYPES: {
 		MOUSE_DOWN: "mousedown",
@@ -25,6 +21,14 @@ constants.LISTENER = {
 		KEY_DOWN: "keydown",
 		KEY_UP: "keyup"
 	}
+};
+
+constants.PATHS = {
+	ASSETS_DIR: `${__dirname}/../assets/`,
+	DATA_DIR: `${__dirname}/../data/`,
+	DB_DIR: `${__dirname}/../db/`,
+	IMG_DIR: `${__dirname}/../assets/img/`,
+	SOUND_DIR: `${__dirname}/../assets/sound/`
 };
 
 constants.SPRITE = {
@@ -53,6 +57,10 @@ constants.SPRITE = {
 		'reacting': ['reacting-damaged'],
 		'damaged': []
 	}
+};
+
+constants.VIEWPORT = {
+	EDGE_BUFFER: 50
 };
 
 /*

@@ -10,6 +10,7 @@ const Listener = require('./listener');
 const Renderer = require('./renderer');
 const Viewport = require('./viewport');
 const World = require('./world');
+const loadImages = require('./image/loader');
 
 const TICK_ROLLOVER = 10000;
 

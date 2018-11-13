@@ -2,6 +2,7 @@ const data = {
 	images: {
 		sheet: 'traffic-light-1', x: 0, y: 0, w: 276, h: 135
 	},
+	sheets: {},
 	sprites: {}
 };
 
@@ -15,6 +16,11 @@ module.exports = {
 			}
 		}
 
-		return value;
+		return JSON.parse(JSON.stringify(value));
+	},
+	updateGameData(key, value) {
+		if(state[key]) {
+			state[key] = value;
+		}
 	}
 };
