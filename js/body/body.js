@@ -8,7 +8,7 @@ module.exports = class Body {
 	constructor(args) {
 		//this.category
 		//this.mask
-		this.id = incrementGameState('lastBodyId');
+		this.id = incrementGameState('lastBodyID');
 		this.world = null;
 		this.position = {
 			x: args.x || 0,
@@ -27,16 +27,28 @@ module.exports = class Body {
 		this.sprite = new Sprite(getGameData('sprites', args.sprite), this);
 	}
 
-	addInput(eventName, {callback = () => {}, key = false, scroll = false}) {
+	addMouseInput(eventName, {callback = () => {}, key = false, scroll = false}) {
 		this.world.viewports.eachItem((viewport) => {
-			viewport.listener.addBody(this, eventName);
+			if(viewport.mouseListener) {
+				viewport.mouseListener.addBody(this, eventName);
+			}
 		});
 
-		this.inputs.addItem({callback, scroll}, key);
+		this.inputs.addItem({callback, scroll}, `${eventName}-${key}`);
 	}
 
-	hasInputKey(key, scroll = false) {
-		const input = this.inputs.getItem(key);
+	addKeyInput(eventName, {callback = () => {}, key = false}) {
+		this.world.viewports.eachItem((viewport) => {
+			if(viewport.keyListener) {
+				viewport.keyListener.addBody(this, eventName);
+			}
+		});
+
+		this.inputs.addItem({callback, scroll}, `${eventName}-${key}`);
+	}
+
+	hasMouseInput(eventName, key, scroll = false) {
+		const input = this.inputs.getItem(`${eventName}-${key}`);
 
 		if( input && input.scroll == scroll ) {
 			return input;
@@ -44,4 +56,34 @@ module.exports = class Body {
 
 		return {};
 	}
+
+	hasKeyInput(eventName, key) {
+		const input = this.inputs.getItem(`${eventName}-${key}`);
+
+		if(input) {
+			return input;
+		}
+
+		return {};
+	}
+
+	/*
+	addInput(eventName, {callback = () => {}, key = false, scroll = false}) {
+		this.world.viewports.eachItem((viewport) => {
+			viewport.listener.addBody(this, eventName);
+		});
+
+		this.inputs.addItem({callback, scroll}, `${eventName}-${key}`);
+	}
+
+	hasInputKey(eventName, key, scroll = false) {
+		const input = this.inputs.getItem(`${eventName}-${key}`);
+
+		if( input && input.scroll == scroll ) {
+			return input;
+		}
+
+		return {};
+	}
+	*/
 }

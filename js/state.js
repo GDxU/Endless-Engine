@@ -19,12 +19,13 @@ module.exports = {
 		return value;
 	},
 	incrementGameState(key) {
-		if(state[key]) {
+		if(state.hasOwnProperty(key)) {
+			console.log('state key:', state[key]);
 			return ++state[key];
 		}
 	},
 	updateGameState(key, value) {
-		if(state[key]) {
+		if(state.hasOwnProperty(key)) {
 			state[key] = value;
 		}
 	}

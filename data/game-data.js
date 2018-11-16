@@ -1,8 +1,10 @@
 const data = {
 	images: {
-		sheet: 'traffic-light-1', x: 0, y: 0, w: 276, h: 135
+		'traffic-light-1': {sheet: 'traffic-light-1', x: 0, y: 0, w: 276, h: 135}
 	},
-	sheets: {},
+	sheets: {
+		'traffic-light-1': 'traffic-light-1.png'
+	},
 	sprites: {}
 };
 

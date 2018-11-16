@@ -1,9 +1,11 @@
+/* eslint-disable no-console */
+const fs = require('fs');
 const MaxRectsPacker = require('maxrects-packer');
 const Datastore = require('nedb');
 const {PATHS} = require('../constants');
 const {getGameData, updateGameData} = require(`${PATHS.DATA_DIR}/game-data`);
 
-module.exports = new function() {
+const converter = new function() {
 	const _self 	= this;
 	const _encoded	= {};
 	const _images	= getGameData('images');
@@ -12,27 +14,14 @@ module.exports = new function() {
 	let _canvas		= false;
 	let _context	= false;
 
-	_self.decode = function(callback = function(){}) {
-		_db = new Datastore({filename: `${PATHS.ASSETS_DIR}/encoded-img-data`, autoload: true});
-
-		_db.findOne({}, function(err, doc) {
-			if( doc ) {
-				console.log('starting decode');
-				_loadSheet(doc, 0, callback);
-			}
-		});
-	};
-
 	function _loadSheet(encoded, index, callback) {
 		const key	= Object.keys(encoded.sheets)[index];
 		const data	= encoded.sheets[key];
 		const image = new Image();
 
 		image.onload = function() {
-			index++;
-
-			if( index < Object.keys(encoded.sheets).length ) {
-				_loadSheet(encoded, index, callback);
+			if( index + 1 < Object.keys(encoded.sheets).length ) {
+				_loadSheet(encoded, index + 1, callback);
 			} else {
 				// Adjust image data
 				for(const i in encoded.images) {
@@ -63,106 +52,7 @@ module.exports = new function() {
 		image.src = data;
 	}
 
-	/*
-	function _loadImages(encoded, index, callback) {
-		const key	= Object.keys(encoded.images)[index];
-		const sheet	= encoded.images[key].sheet;
-		const data	= encoded.sheets[sheet];
-		const image = new Image();
-
-		image.onload = function() {
-			index++;
-
-			Data.images[key].src	= data;
-			Data.images[key].x		= encoded.images[key].x;
-			Data.images[key].y		= encoded.images[key].y;
-
-			if( index < Object.keys(_images).length ) {
-				_loadImages(encoded, index, callback);
-			} else {
-				callback();
-			}
-		}
-
-		image.src = data;
-	}
-	*/
-
-	_self.encode = function() {
-		fs.unlink(PATHS.ASSETS_DIR + '/encoded-img-data', function(err) {
-			_canvas	= document.createElement('canvas');
-			_context	= _canvas.getContext('2d');
-
-			_db = new Datastore({filename: PATHS.ASSETS_DIR + '/encoded-img-data', autoload: true});
-
-			if( Object.keys(_images).length > 0 ) {
-				_binImages();
-			}
-		});
-	};
-
-	function _binImages() {
-		const packer = new MaxRectsPacker(1024, 1024);
-		const contents = [];
-
-		for(var i in _images) {
-			const image = _images[i];
-			const shape = {width: image.w, height: image.h, data: i};
-
-			contents.push(shape);
-		}
-
-		packer.addArray(contents);
-
-		_pasteBin(packer, 0, function() {
-			_db.insert({sheets: _encoded, images: _images}, function(err, newDoc) {
-
-				if( err ) {
-					console.log('Bin encoding problem occurred');
-				} else {
-					console.log('Bin encoding complete');
-				}
-
-				for(var s in _encoded) {
-					var sheet	= _encoded[s];
-					var data	= sheet.replace(/^data:image\/\w+;base64,/, '');
-					var buffer = new Buffer(data, 'base64');
-
-					fs.writeFile('assets/test-' + s + '.png', buffer, function(err){
-						console.log('completed writing');
-					});
-				}
-			});
-		})
-	}
-
-	function _pasteBin(packer, binIndex = 0, binsComplete = function(){}) {
-		console.log('Doing bin ' + binIndex);
-		const bin = packer.bins[binIndex];
-
-		_canvas.width	= bin.width;
-		_canvas.height	= bin.height;
-
-		_context.globalCompositeOperation = 'source-over';
-		_context.fillStyle = 'transparent';
-		_context.fillRect(0, 0, _canvas.width, _canvas.height);
-
-		_pasteBinImages(packer, binIndex, 0, function() {
-			// Dump canvas data
-			_encoded[`spritesheet-${binIndex}`] = _canvas.toDataURL('image/png');
-
-			binIndex++;
-
-			if( binIndex < packer.bins.length ) {
-				// Move on to the next bin
-				_pasteBin(packer, binIndex, binsComplete);
-			} else {
-				binsComplete();
-			}
-		});
-	}
-
-	function _pasteBinImages(packer, binIndex = 0, rectIndex = 0, binComplete = function(){}) {
+	function _pasteBinImages(packer, binIndex = 0, rectIndex = 0, binComplete = () => {}) {
 		const bin			= packer.bins[binIndex];
 		const image			= new Image();
 		const binImgData	= bin.rects[rectIndex];
@@ -185,16 +75,106 @@ module.exports = new function() {
 			_images[binImgData.data].y			= binImgData.y;
 			_images[binImgData.data].sheet	= `spritesheet-${binIndex}`;
 
-
-			rectIndex++;
-
-			if( rectIndex < packer.bins[binIndex].rects.length ) {
-				_pasteBinImages(packer, binIndex, rectIndex, binComplete);
+			if( rectIndex + 1 < packer.bins[binIndex].rects.length ) {
+				_pasteBinImages(packer, binIndex, rectIndex + 1, binComplete);
 			} else {
 				binComplete();
 			}
 		}
 
-		image.src = PATHS.IMG_DIR + _sheets[ _images[binImgData.data].sheet ];
+		image.src = PATHS.IMG_DIR + _sheets[_images[binImgData.data].sheet];
 	}
+
+	function _pasteBin(packer, binIndex = 0, binsComplete = () => {}) {
+		console.log(`Doing bin ${binIndex}`);
+		const bin = packer.bins[binIndex];
+
+		_canvas.width	= bin.width;
+		_canvas.height	= bin.height;
+
+		_context.globalCompositeOperation = 'source-over';
+		_context.fillStyle = 'transparent';
+		_context.fillRect(0, 0, _canvas.width, _canvas.height);
+
+		_pasteBinImages(packer, binIndex, 0, () => {
+			// Dump canvas data
+			_encoded[`spritesheet-${binIndex}`] = _canvas.toDataURL('image/png');
+
+			if( binIndex + 1 < packer.bins.length ) {
+				// Move on to the next bin
+				_pasteBin(packer, binIndex + 1, binsComplete);
+			} else {
+				binsComplete();
+			}
+		});
+	}
+
+	function _binImages() {
+		console.log('000')
+		const packer = new MaxRectsPacker(1024, 1024);
+		const contents = [];
+
+		console.log(1111)
+		for(var i in _images) {
+			const image = _images[i];
+			const shape = {width: image.w, height: image.h, data: i};
+
+			contents.push(shape);
+		}
+		console.log(contents)
+
+		packer.addArray(contents);
+		console.log(2222)
+
+		_pasteBin(packer, 0, () => {
+			_db.insert({sheets: _encoded, images: _images}, (err) => {
+
+				if(err) {
+					console.log('Bin encoding problem occurred', err);
+				} else {
+					console.log('Bin encoding complete');
+				}
+
+				for(var s in _encoded) {
+					var sheet	= _encoded[s];
+					var data	= sheet.replace(/^data:image\/\w+;base64,/u, '');
+					var buffer = new Buffer(data, 'base64');
+
+					fs.writeFile(`assets/test-${s}.png`, buffer, () => {
+						console.log('completed writing');
+					});
+				}
+			});
+		});
+	}
+
+	_self.encode = () => {
+		console.log('ENCODING')
+		fs.unlink(`${PATHS.ASSETS_DIR}/encoded-img-data`, () => {
+			_canvas	= document.createElement('canvas');
+			_context	= _canvas.getContext('2d');
+
+			_db = new Datastore({filename: `${PATHS.ASSETS_DIR}/encoded-img-data`, autoload: true});
+
+			if( Object.keys(_images).length > 0 ) {
+				_binImages();
+			}
+		});
+	};
+
+	_self.decode = (callback = () => {}) => {
+		_db = new Datastore({filename: `${PATHS.ASSETS_DIR}/encoded-img-data`, autoload: true});
+
+		_db.findOne({}, (err, doc) => {
+			if(doc) {
+				console.log('starting decode');
+				_loadSheet(doc, 0, callback);
+			}
+			if(err) {
+				throw(err);
+			}
+		});
+	};
 };
+
+module.exports = converter.encode;

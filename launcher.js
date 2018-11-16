@@ -1,7 +1,5 @@
 const electron	= require('electron');
 const ipc		= electron.ipcRenderer;
-//const fs			= require('fs');
-//const Datastore	= require('nedb');
 
 //const GAME_DATA = require('./data/game-data');
 const Engine = require('./js/engine');
@@ -9,6 +7,11 @@ const Engine = require('./js/engine');
 const engine = new Engine();
 
 engine.start();
+
+
+const convertImages = require('./js/image/converter');
+
+//convertImages();
 
 log = function(data) {
 	ipc.send('display', data);

@@ -1,9 +1,13 @@
-const Bounds = require('./bounds');
-const Listener = require('./listener');
-const {incrementGameState} = require('./state');
+const Bounds = require('../bounds');
+//const Listener = require('./listener');
+const KeyListener = require('./key-listener');
+const MouseListener = require('./mouse-listener');
+const {incrementGameState} = require('../state');
 
 module.exports = class Viewport {
 	constructor(args) {
+		const {key = true, mouse = true} = (args.listeners || {});
+
 		this.id = incrementGameState('lastViewportId');
 		this.width = args.width || 0;
 		this.height = args.height || 0;
@@ -12,7 +16,6 @@ module.exports = class Viewport {
 			y: args.y || 0
 		};
 		this.layer = args.layer || 1;
-		this.listener = new Listener(this);
 		this.world = args.world;
 		this.world.connectViewport(this);
 		this.bounds = new Bounds(this.width, this.height, this.position);
@@ -23,6 +26,8 @@ module.exports = class Viewport {
 			}
 		};
 		this.view.bounds = new Bounds(this.width, this.height, this.view.position);
+		this.keyListener = key ? new KeyListener(this) : false;
+		this.mouseListener = mouse ? new MouseListener(this) : false;
 	}
 
 	updateView({x, y}) {

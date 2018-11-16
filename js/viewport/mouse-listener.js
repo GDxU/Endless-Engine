@@ -1,21 +1,17 @@
-const List = require('./list');
-const {getGameState} = require('./state');
-const {getGameData} = require('../data/game-data');
+const List = require('../list');
+const {getGameState} = require('../state');
+const {getGameData} = require('../../data/game-data');
 
-const {LISTENER} = require('./constants');
+const {LISTENER} = require('../constants');
 const {
 	MOUSE_DOWN,
 	MOUSE_UP,
 	MOUSE_WHEEL,
 	MOUSE_MOVE,
-	MOUSE_DRAG,
-	KEY_DOWN,
-	KEY_UP
+	MOUSE_DRAG
 } = LISTENER.EVENT_TYPES;
 const BODY_LISTS = [
 	"allBodies",
-	"keyboardPressBodies",
-	"keyboardUpBodies",
 	"mouseClickBodies",
 	"mouseUnclickBodies",
 	"mouseDragBodies",
@@ -40,8 +36,6 @@ module.exports = class Listener {
 		window.addEventListener(MOUSE_UP,		this.mouseUpInput.bind(this));
 		window.addEventListener(MOUSE_WHEEL,	this.mouseWheelInput.bind(this));
 		window.addEventListener(MOUSE_MOVE,		this.mouseMove.bind(this));
-		window.addEventListener(KEY_DOWN,		this.keyboardInput.bind(this));
-		window.addEventListener(KEY_UP,			this.keyboardInput.bind(this));
 	}
 
 	enable() {
@@ -124,18 +118,6 @@ module.exports = class Listener {
 		this.triggerEvent(MOUSE_DRAG, point);
 	}
 
-	keyboardInput(e) {
-		const {key} = e;
-
-		e.preventDefault();
-
-		if( e.type == "keyup" ) {
-			this.triggerEvent(KEY_UP, {key});
-		} else if( e.type == "keydown" ) {
-			this.triggerEvent(KEY_DOWN, {key});
-		}
-	}
-
 	updateCursorPosition(e) {
 		const point = {
 			x:	e.pageX,
@@ -174,17 +156,7 @@ module.exports = class Listener {
 		};
 	}
 
-	testKeyEvent(eventName, bodyList = new List(), key) {
-		bodyList.eachItem((body) => {
-			const {callback} = body.hasInputKey(eventName, key);
-
-			if( callback ) {
-				callback();
-			}
-		});
-	}
-
-	testMouseEvent(
+	testEvent(
 		eventName,
 		bodyList = new List(),
 		{
@@ -198,7 +170,7 @@ module.exports = class Listener {
 		let highestBody = null;
 
 		bodyList.eachItem((body) => {
-			const {callback} = body.hasInputKey(eventName, this.mouseButton, scroll);
+			const {callback} = body.hasMouseInput(eventName, this.mouseButton, scroll);
 
 			if( keyless || callback ) {
 				/*
@@ -230,25 +202,19 @@ module.exports = class Listener {
 		if(this.enabled) {
 			switch(eventName) {
 				case MOUSE_DOWN:
-					this.testMouseEvent(eventName, this.mouseClickBodies, {point, scroll});
+					this.testEvent(eventName, this.mouseClickBodies, {point, scroll});
 					break;
 				case MOUSE_UP:
-					this.testMouseEvent(eventName, this.mouseUnclickBodies, {point});
+					this.testEvent(eventName, this.mouseUnclickBodies, {point});
 					break;
 				case MOUSE_WHEEL:
-					this.testMouseEvent(eventName, this.mouseWheelBodies, {point, scroll});
+					this.testEvent(eventName, this.mouseWheelBodies, {point, scroll});
 					break;
 				case MOUSE_MOVE:
-					this.testMouseEvent(eventName, this.mouseMoveBodies, {point, keyless: true});
+					this.testEvent(eventName, this.mouseMoveBodies, {point, keyless: true});
 					break;
 				case MOUSE_DRAG:
-					this.testMouseEvent(eventName, this.mouseDragBodies, {point});
-					break;
-				case KEY_DOWN:
-					this.testKeyEvent(eventName, this.keyboardPressBodies, key);
-					break;
-				case KEY_UP:
-					this.testKeyEvent(eventName, this.keyboardUpBodies, key);
+					this.testEvent(eventName, this.mouseDragBodies, {point});
 					break;
 				default:
 					break;
@@ -274,12 +240,6 @@ module.exports = class Listener {
 				break;
 			case MOUSE_DRAG:
 				this.mouseDragBodies.addItem(body, body.id);
-				break;
-			case KEY_DOWN:
-				this.keyboardPressBodies.addItem(body, body.id);
-				break;
-			case KEY_UP:
-				this.keyboardUpBodies.addItem(body, body.id);
 				break;
 			default:
 				break;

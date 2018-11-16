@@ -8,7 +8,7 @@ const Collider = require('./collider');
 const List = require('./list');
 const Listener = require('./listener');
 const Renderer = require('./renderer');
-const Viewport = require('./viewport');
+const Viewport = require('./viewport/viewport');
 const World = require('./world');
 const loadImages = require('./image/loader');
 
@@ -23,6 +23,8 @@ module.exports = class Engine {
 		this.worlds = new List();
 		this.tickCounter = 0;
 		this.killSwitch = false;
+
+		//loadImages(onComplete);
 
 		// TEMPORARY
 		const testBodyOne = new Body({
@@ -58,7 +60,10 @@ module.exports = class Engine {
 				x: 88,
 				y: 30
 			},
-			world: testWorldOne
+			world: testWorldOne,
+			listeners: {
+				key: false
+			}
 		});
 
 		// addWorld()
@@ -71,12 +76,15 @@ module.exports = class Engine {
 		this.viewports.addItem(testViewportTwo);
 
 
-		testBodyTwo.addInput('mousemove', {callback: function() {
-			console.log('hovered body two');
+		testBodyTwo.addMouseInput('mousemove', {callback: function(self, event) {
+			//console.log('hovered body two');
 		}});
-		testBodyTwo.addInput('keydown', {callback: function() {
+		testBodyTwo.addKeyInput('keydown', {callback: function() {
 			console.log('pressed e');
 		}, key: 'e'});
+		testBodyTwo.addMouseInput('mousedown', {callback: function() {
+			console.log('clicked body');
+		}, key: 'left'});
 
 		//testViewportTwo.listener.disable();
 	}
