@@ -1,7 +1,7 @@
 const Bounds = require('../bounds');
 const List = require('../list');
-const Sprite = require('../sprite');
-const {getGameData} = require('../../data/game-data');
+const Sprite = require('./sprite');
+//const {getGameData} = require('../../data/game-data');
 const {incrementGameState} = require('../state');
 
 module.exports = class Body {
@@ -24,7 +24,8 @@ module.exports = class Body {
 		this.width = args.width || 0;
 		this.bounds = new Bounds(this.width, this.height, this.position);
 		this.inputs = new List();
-		this.sprite = new Sprite(getGameData('sprites', args.sprite), this);
+		this.sprite = new Sprite(args.sprite, this);
+		this.refreshSpriteFrame = false;
 	}
 
 	addMouseInput(eventName, {callback = () => {}, key = false, scroll = false}) {
@@ -66,24 +67,4 @@ module.exports = class Body {
 
 		return {};
 	}
-
-	/*
-	addInput(eventName, {callback = () => {}, key = false, scroll = false}) {
-		this.world.viewports.eachItem((viewport) => {
-			viewport.listener.addBody(this, eventName);
-		});
-
-		this.inputs.addItem({callback, scroll}, `${eventName}-${key}`);
-	}
-
-	hasInputKey(eventName, key, scroll = false) {
-		const input = this.inputs.getItem(`${eventName}-${key}`);
-
-		if( input && input.scroll == scroll ) {
-			return input;
-		}
-
-		return {};
-	}
-	*/
 }

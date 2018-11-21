@@ -1,13 +1,15 @@
-const {FACINGS, MODES, MODE_FALLBACKS} = require('./constants');
+const {getGameData} = require('../../data/game-data');
+const {FACINGS, MODES, MODE_FALLBACKS} = require('../constants');
 
 module.exports = class Sprite {
-	constructor(data, body) {
+	constructor(name, body) {
+		this.name = name;
 		this.body = body;
-		this.data = data;
+		this.data = getGameData('sprites', name);
 		this.tickCounter = 0;
 		this.loopDelayCounter = 0;
 		this.frameIndex = 0;
-		this.texture = "";
+		this.texture = '';
 	}
 
 	/*
@@ -41,7 +43,8 @@ module.exports = class Sprite {
 	tick() {
 		let usableMode		= false;
 		let usableFacing	= false;
-		let spriteMode		= this.mode || "normal";
+		let spriteMode		= this.mode || 'normal';
+		const refresh = this.body.refreshSpriteFrame;
 
 		if( !this.data.frameData[usableMode] ) {
 			const attemptedModes	= spriteMode.split('-');

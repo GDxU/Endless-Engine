@@ -49,7 +49,7 @@ module.exports = class KeyListener {
 			const {callback} = body.hasKeyInput(eventName, key);
 
 			if( callback ) {
-				callback();
+				callback(body, key);
 			}
 		});
 	}

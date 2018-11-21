@@ -1,5 +1,4 @@
 const Bounds = require('../bounds');
-//const Listener = require('./listener');
 const KeyListener = require('./key-listener');
 const MouseListener = require('./mouse-listener');
 const {incrementGameState} = require('../state');

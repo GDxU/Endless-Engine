@@ -20,7 +20,6 @@ module.exports = {
 	},
 	incrementGameState(key) {
 		if(state.hasOwnProperty(key)) {
-			console.log('state key:', state[key]);
 			return ++state[key];
 		}
 	},

@@ -6,7 +6,6 @@ const Canvas = require('./canvas');
 const Collider = require('./collider');
 //const EventEmitter = require('./event-emitter');
 const List = require('./list');
-const Listener = require('./listener');
 const Renderer = require('./renderer');
 const Viewport = require('./viewport/viewport');
 const World = require('./world');
@@ -24,20 +23,25 @@ module.exports = class Engine {
 		this.tickCounter = 0;
 		this.killSwitch = false;
 
-		//loadImages(onComplete);
+		const onComplete = () => {
+			console.log('image loading complete');
+		};
+		loadImages(onComplete);
 
 		// TEMPORARY
 		const testBodyOne = new Body({
 			x: 0,
 			y: 0,
-			height: 10,
-			width: 10
+			height: 16,
+			width: 16,
+			sprite: 'test-sprite-1'
 		});
 		const testBodyTwo = new Body({
 			x: 15,
 			y: 15,
-			height: 10,
-			width: 10
+			height: 16,
+			width: 16,
+			sprite: 'test-sprite-1'
 		});
 		const testWorldOne = new World();
 		const testViewportOne = new Viewport({
@@ -62,7 +66,8 @@ module.exports = class Engine {
 			},
 			world: testWorldOne,
 			listeners: {
-				key: false
+				key: false,
+				mouse: true
 			}
 		});
 
@@ -76,11 +81,11 @@ module.exports = class Engine {
 		this.viewports.addItem(testViewportTwo);
 
 
-		testBodyTwo.addMouseInput('mousemove', {callback: function(self, event) {
-			//console.log('hovered body two');
+		testBodyTwo.addMouseInput('mousemove', {callback: function(self, e) {
+			//console.log('mouse moving', self, e);
 		}});
-		testBodyTwo.addKeyInput('keydown', {callback: function() {
-			console.log('pressed e');
+		testBodyTwo.addKeyInput('keydown', {callback: function(self, key) {
+			//console.log('pressed e', self, key);
 		}, key: 'e'});
 		testBodyTwo.addMouseInput('mousedown', {callback: function() {
 			console.log('clicked body');
@@ -89,20 +94,22 @@ module.exports = class Engine {
 		//testViewportTwo.listener.disable();
 	}
 
-	addViewport() {
-
+	addViewport(name, world) {
+		// get viewport Data
+		// add into viewports list
 	}
 
-	removeViewport() {
-
+	removeViewport(name) {
+		this.viewports.removeItem(name);
 	}
 
-	addWorld() {
-
+	addWorld(name) {
+		// get world Data (from database?)
 	}
 
-	removeWorld() {
-
+	removeWorld(name) {
+		//this.worlds.viewport.eachItem()
+		this.worlds.removeItem(name);
 	}
 
 	renderViewports() {

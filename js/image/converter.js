@@ -43,8 +43,6 @@ const converter = new function() {
 
 				updateGameData('sheets', imageSheets);
 
-				console.log('sheet loading done');
-
 				callback();
 			}
 		}
@@ -86,7 +84,6 @@ const converter = new function() {
 	}
 
 	function _pasteBin(packer, binIndex = 0, binsComplete = () => {}) {
-		console.log(`Doing bin ${binIndex}`);
 		const bin = packer.bins[binIndex];
 
 		_canvas.width	= bin.width;
@@ -110,21 +107,17 @@ const converter = new function() {
 	}
 
 	function _binImages() {
-		console.log('000')
 		const packer = new MaxRectsPacker(1024, 1024);
 		const contents = [];
 
-		console.log(1111)
 		for(var i in _images) {
 			const image = _images[i];
 			const shape = {width: image.w, height: image.h, data: i};
 
 			contents.push(shape);
 		}
-		console.log(contents)
 
 		packer.addArray(contents);
-		console.log(2222)
 
 		_pasteBin(packer, 0, () => {
 			_db.insert({sheets: _encoded, images: _images}, (err) => {
@@ -149,7 +142,6 @@ const converter = new function() {
 	}
 
 	_self.encode = () => {
-		console.log('ENCODING')
 		fs.unlink(`${PATHS.ASSETS_DIR}/encoded-img-data`, () => {
 			_canvas	= document.createElement('canvas');
 			_context	= _canvas.getContext('2d');
@@ -167,7 +159,6 @@ const converter = new function() {
 
 		_db.findOne({}, (err, doc) => {
 			if(doc) {
-				console.log('starting decode');
 				_loadSheet(doc, 0, callback);
 			}
 			if(err) {

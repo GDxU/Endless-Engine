@@ -173,8 +173,8 @@ module.exports = class Listener {
 			const {callback} = body.hasMouseInput(eventName, this.mouseButton, scroll);
 
 			if( keyless || callback ) {
-				/*
-				const zIndex = getGameData('layers')[box.layer]; // TODO: update this
+				const sprite = getGameData('sprites')[body.sprite.name];
+				const zIndex = getGameData('layers')[sprite.layer];
 
 				if( zIndex > highestIndex ) {
 					if( body.bounds.encompass(point) ) {
@@ -182,13 +182,6 @@ module.exports = class Listener {
 						highestCallback	= callback;
 						highestBody			= body;
 					}
-				}
-				*/
-
-				if( body.bounds.encompass(point) ) {
-					//highestIndex		= zIndex;
-					highestCallback	= callback;
-					highestBody			= body;
 				}
 			}
 		});
