@@ -1,4 +1,4 @@
-const List = require('../list');
+const List = require('../util/list');
 const {getGameState} = require('../state');
 const {getGameData} = require('../../data/game-data');
 
@@ -173,8 +173,9 @@ module.exports = class Listener {
 			const {callback} = body.hasMouseInput(eventName, this.mouseButton, scroll);
 
 			if( keyless || callback ) {
-				const sprite = getGameData('sprites')[body.sprite.name];
-				const zIndex = getGameData('layers')[sprite.layer];
+				//const sprite = getGameData('sprites', body.sprite.name);
+				//const zIndex = getGameData('layers', sprite.layer);
+				const zIndex = getGameData('layers', body.display.layer);
 
 				if( zIndex > highestIndex ) {
 					if( body.bounds.encompass(point) ) {

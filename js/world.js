@@ -1,4 +1,4 @@
-const List = require('./list');
+const List = require('./util/list');
 const {incrementGameState} = require('./state');
 
 module.exports = class World {

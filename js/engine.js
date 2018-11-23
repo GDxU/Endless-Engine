@@ -5,7 +5,7 @@ const Bounds = require('./bounds');
 const Canvas = require('./canvas');
 const Collider = require('./collider');
 //const EventEmitter = require('./event-emitter');
-const List = require('./list');
+const List = require('./util/list');
 const Renderer = require('./renderer');
 const Viewport = require('./viewport/viewport');
 const World = require('./world');
@@ -26,6 +26,7 @@ module.exports = class Engine {
 		const onComplete = () => {
 			console.log('image loading complete');
 		};
+
 		loadImages(onComplete);
 
 		// TEMPORARY
@@ -34,14 +35,16 @@ module.exports = class Engine {
 			y: 0,
 			height: 16,
 			width: 16,
-			sprite: 'test-sprite-1'
+			sprite: 'test-sprite-1',
+			layer: 'layer-1'
 		});
 		const testBodyTwo = new Body({
 			x: 15,
 			y: 15,
-			height: 16,
-			width: 16,
-			sprite: 'test-sprite-1'
+			height: 10,
+			width: 10,
+			sprite: 'test-sprite-2',
+			layer: 'layer-2'
 		});
 		const testWorldOne = new World();
 		const testViewportOne = new Viewport({
@@ -61,7 +64,7 @@ module.exports = class Engine {
 			width: 170,
 			height: 170,
 			view: {
-				x: 88,
+				x: 86,
 				y: 30
 			},
 			world: testWorldOne,
@@ -136,7 +139,7 @@ module.exports = class Engine {
 		// dispatch various events? depending on tick counter
 			// Game.Events.dispatch("tick");
 		this.resolvePositions();
-		// this.tickBodies();
+		// this.tickBodies(); // tick sprites
 		this.renderViewports();
 
 		if( ++this.tickCounter >= TICK_ROLLOVER ) {

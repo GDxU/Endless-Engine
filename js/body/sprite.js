@@ -1,8 +1,11 @@
+const BodyImage = require('./body-image');
 const {getGameData} = require('../../data/game-data');
 const {FACINGS, MODES, MODE_FALLBACKS} = require('../constants');
 
-module.exports = class Sprite {
+module.exports = class Sprite extends BodyImage {
 	constructor(name, body) {
+		super();
+
 		this.name = name;
 		this.body = body;
 		this.data = getGameData('sprites', name);
@@ -12,26 +15,6 @@ module.exports = class Sprite {
 		this.texture = '';
 	}
 
-	/*
-	sprite data object:
-	{
-		ticksPerFrame: 0,
-		loop: false,
-		padding: 10,
-		frameData: {
-			'normal': {
-				'e': {},
-				'w': {}
-			}
-			[mode]: {
-				[facing]: {
-					frames: [],
-					zindex: false
-				}
-			}
-		}
-	}
-	*/
 	get mode() {
 		return this.body.mode;
 	}
@@ -40,11 +23,40 @@ module.exports = class Sprite {
 		return this.body.facing;
 	}
 
+	render(context, vportPosition) {
+		if(this.data.tiled) {
+			/*
+			const image = {
+				name:		_self.inside.image,
+				width:	Data.images[_self.inside.image].w,
+				height:	Data.images[_self.inside.image].h,
+				x:			Data.images[_self.inside.image].x,
+				y:			Data.images[_self.inside.image].y
+			};
+			*/
+			const image = getGameData('images', this.texture);
+
+			image.name = this.texture;
+
+			this.constructor.tile(image, this.body.bounds, context);
+		} else {
+			const calcPosition = {
+				x: this.body.position.x + vportPosition.x,
+				y: this.body.position.y + vportPosition.y
+			};
+
+			context.fillStyle = 'green';
+			context.translate(calcPosition.x, calcPosition.y);
+			context.fillRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
+			context.translate(-calcPosition.x, -calcPosition.y);
+		}
+	}
+
 	tick() {
+		const refresh = this.body.refreshSpriteFrame;
 		let usableMode		= false;
 		let usableFacing	= false;
 		let spriteMode		= this.mode || 'normal';
-		const refresh = this.body.refreshSpriteFrame;
 
 		if( !this.data.frameData[usableMode] ) {
 			const attemptedModes	= spriteMode.split('-');

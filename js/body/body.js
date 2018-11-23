@@ -1,6 +1,6 @@
 const Bounds = require('../bounds');
-const List = require('../list');
-const Sprite = require('./sprite');
+const List = require('../util/list');
+const Display = require('./display');
 //const {getGameData} = require('../../data/game-data');
 const {incrementGameState} = require('../state');
 
@@ -18,15 +18,28 @@ module.exports = class Body {
 
 		// static/sleeping?
 		// ghost (do not track collissions)
-		// invis (do not track sprite/rendering)
-
+		// sensor: collisions tracked and pairs notified, but does not prevent movement
+		this.visible = true;
 		this.height = args.height || 0;
 		this.width = args.width || 0;
 		this.bounds = new Bounds(this.width, this.height, this.position);
 		this.inputs = new List();
-		this.sprite = new Sprite(args.sprite, this);
+		this.display = new Display(args, this);
+		//this.sprite = args.sprite ? new Sprite(args.sprite, this) : false;
+		//this.text = args.text ? new Text() : false;
 		this.refreshSpriteFrame = false;
 	}
+
+	disableInput(eventName) {
+		this.inputs.disableItem(eventName);
+	}
+
+	enableInput(eventName) {
+		this.inputs.enableItem(eventName);
+	}
+
+	// "inputs" for sensor events?
+		// might need sensors be able to toggle key input events
 
 	addMouseInput(eventName, {callback = () => {}, key = false, scroll = false}) {
 		this.world.viewports.eachItem((viewport) => {

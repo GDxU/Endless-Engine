@@ -18,12 +18,19 @@ module.exports = class Renderer {
 		const bodies = viewport.world.getBodies();
 
 		bodies.forEach((body) => {
-			if(true) { // check visibility property
+			if(body.visible) {
 				if( viewport.view.bounds.intersect(body.bounds) ) {
 					const position = {
 						x: body.position.x + viewport.position.x - viewport.view.position.x,
 						y: body.position.y + viewport.position.y - viewport.view.position.y
 					};
+
+					const vprtPosition = {
+						x: viewport.position.x - viewport.view.position.x,
+						y: viewport.position.y - viewport.view.position.y
+					};
+
+					body.display.render(ctx, vprtPosition);
 
 					// trim from left/right/top/bottom
 					/*
@@ -31,10 +38,12 @@ module.exports = class Renderer {
 					const trimLeft = left > 0 ? left : 0;
 					*/
 
+					/*
 					ctx.fillStyle = 'pink';
 					ctx.translate(position.x, position.y);
 					ctx.fillRect(-body.width / 2, -body.height / 2, body.width, body.height);
 					ctx.translate(-position.x, -position.y);
+					*/
 				}
 			}
 		});

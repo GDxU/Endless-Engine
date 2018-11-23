@@ -129,9 +129,10 @@ const converter = new function() {
 				}
 
 				for(var s in _encoded) {
-					var sheet	= _encoded[s];
-					var data	= sheet.replace(/^data:image\/\w+;base64,/u, '');
-					var buffer = new Buffer(data, 'base64');
+					const sheet = _encoded[s];
+					const data = sheet.replace(/^data:image\/\w+;base64,/u, '');
+					//var buffer = new Buffer(data, 'base64');
+					const buffer = Buffer.from(data, 'base64');
 
 					fs.writeFile(`assets/test-${s}.png`, buffer, () => {
 						console.log('completed writing');
