@@ -10,17 +10,17 @@ module.exports = class Display {
 		this.layer = args.layer || '';
 	}
 
-	render(context, vportPosition) {
+	render(context, vportPosition, vportSize, vportViewBounds) {
 		if(this.border) {
-			this.border.render(context, vportPosition);
+			this.border.render(context, vportPosition, vportSize, vportViewBounds);
 		}
 
 		if(this.sprite) {
-			this.sprite.render(context, vportPosition);
+			this.sprite.render(context, vportPosition, vportSize, vportViewBounds);
 		}
 
 		if(this.text) {
-			this.text.render(context, vportPosition);
+			this.text.render(context, vportPosition, vportSize, vportViewBounds);
 		}
 	}
 

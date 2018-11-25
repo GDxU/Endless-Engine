@@ -25,12 +25,12 @@ module.exports = class Renderer {
 						y: body.position.y + viewport.position.y - viewport.view.position.y
 					};
 
-					const vprtPosition = {
+					const vportPosition = {
 						x: viewport.position.x - viewport.view.position.x,
 						y: viewport.position.y - viewport.view.position.y
 					};
 
-					body.display.render(ctx, vprtPosition);
+					body.display.render(ctx, vportPosition, {width: viewport.width, height: viewport.height}, viewport.view.bounds);
 
 					// trim from left/right/top/bottom
 					/*

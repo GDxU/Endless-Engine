@@ -5,10 +5,9 @@ const ipc		= electron.ipcRenderer;
 const Engine = require('./js/engine');
 
 const engine = new Engine();
-const convertImages = require('./js/image/converter');
-engine.start();
+const {encodeImages} = require('./js/image/converter');
 
-//convertImages();
+//encodeImages();
 
 log = function(data) {
 	ipc.send('display', data);

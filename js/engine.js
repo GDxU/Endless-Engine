@@ -9,7 +9,11 @@ const List = require('./util/list');
 const Renderer = require('./renderer');
 const Viewport = require('./viewport/viewport');
 const World = require('./world');
-const loadImages = require('./image/loader');
+const {decodeImages} = require('./image/converter');
+//const loadImages = require('./image/loader');
+
+const {PATHS} = require('./constants');
+const {getGameData} = require(`${PATHS.DATA_DIR}/game-data`);
 
 const TICK_ROLLOVER = 10000;
 
@@ -25,14 +29,15 @@ module.exports = class Engine {
 
 		const onComplete = () => {
 			console.log('image loading complete');
+			engine.start();
 		};
 
-		loadImages(onComplete);
+		decodeImages(onComplete);
 
 		// TEMPORARY
 		const testBodyOne = new Body({
-			x: 0,
-			y: 0,
+			x: 2,
+			y: -50,
 			height: 16,
 			width: 16,
 			sprite: 'test-sprite-1',
@@ -48,7 +53,7 @@ module.exports = class Engine {
 		});
 		const testWorldOne = new World();
 		const testViewportOne = new Viewport({
-			x: 130,
+			x: 65,
 			y: 80,
 			width: 120,
 			height: 120,

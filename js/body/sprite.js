@@ -1,6 +1,7 @@
 const BodyImage = require('./body-image');
 const {getGameData} = require('../../data/game-data');
-const {FACINGS, MODES, MODE_FALLBACKS} = require('../constants');
+const {SPRITE} = require('../constants');
+const {FACINGS, MODES, MODE_FALLBACKS} = SPRITE;
 
 module.exports = class Sprite extends BodyImage {
 	constructor(name, body) {
@@ -9,7 +10,7 @@ module.exports = class Sprite extends BodyImage {
 		this.name = name;
 		this.body = body;
 		this.data = getGameData('sprites', name);
-		this.tickCounter = 0;
+		this.tickCounter = 10000;
 		this.loopDelayCounter = 0;
 		this.frameIndex = 0;
 		this.texture = '';
@@ -23,7 +24,9 @@ module.exports = class Sprite extends BodyImage {
 		return this.body.facing;
 	}
 
-	render(context, vportPosition) {
+	render(context, vportPosition, vportSize, vportViewBounds) {
+		this.tick();
+
 		if(this.data.tiled) {
 			/*
 			const image = {
@@ -38,14 +41,14 @@ module.exports = class Sprite extends BodyImage {
 
 			image.name = this.texture;
 
-			this.constructor.tile(image, this.body.bounds, context);
+			Sprite.tile(image, this.body, context, vportPosition, vportSize, vportViewBounds);
 		} else {
 			const calcPosition = {
 				x: this.body.position.x + vportPosition.x,
 				y: this.body.position.y + vportPosition.y
 			};
 
-			context.fillStyle = 'green';
+			context.fillStyle = 'pink';
 			context.translate(calcPosition.x, calcPosition.y);
 			context.fillRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
 			context.translate(-calcPosition.x, -calcPosition.y);
@@ -58,7 +61,7 @@ module.exports = class Sprite extends BodyImage {
 		let usableFacing	= false;
 		let spriteMode		= this.mode || 'normal';
 
-		if( !this.data.frameData[usableMode] ) {
+		if( !this.data.frameData[spriteMode] ) {
 			const attemptedModes	= spriteMode.split('-');
 			const [primaryMode]	= attemptedModes;
 			let fallbackMode		= false;
@@ -133,7 +136,6 @@ module.exports = class Sprite extends BodyImage {
 
 			//body.render.sprite.opacity	= frames[spriteMode].opacity;
 			//body.render.sprite.mode		= frames[spriteMode].mode;
-
 			this.texture = currentSet.frames[this.frameIndex];
 
 			// If the facing has a zindex override, set it

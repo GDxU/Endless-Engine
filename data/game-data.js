@@ -22,6 +22,7 @@ const data = {
 		'test-sprite-1': 	{
 			ticksPerFrame: 10,
 			loop: false,
+			tiled: true,
 			padding: 0,
 			layer: 'layer-1',
 			frameData: {
@@ -36,7 +37,7 @@ const data = {
 		'test-sprite-2': 	{
 			ticksPerFrame: 10,
 			loop: false,
-			//tiled: true,
+			tiled: true,
 			padding: 0,
 			layer: 'layer-2',
 			frameData: {
@@ -61,7 +62,8 @@ module.exports = {
 			}
 		}
 
-		return JSON.parse(JSON.stringify(value));
+		return value;
+		//return JSON.parse(JSON.stringify(value));
 	},
 	updateGameData(key, value) {
 		if(data.hasOwnProperty(key)) {

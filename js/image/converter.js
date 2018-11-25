@@ -25,7 +25,7 @@ const converter = new function() {
 			} else {
 				// Adjust image data
 				for(const i in encoded.images) {
-					var imgData = encoded.images[i];
+					const imgData = encoded.images[i];
 
 					_images[i].x		= imgData.x;
 					_images[i].y		= imgData.y;
@@ -33,16 +33,14 @@ const converter = new function() {
 				}
 
 				// Adjust sheet data
-				//Data.sheets = {};
 				const imageSheets = {};
 
 				for(const s in encoded.sheets) {
-					//Data.sheets[s] = encoded.sheets[s];
 					imageSheets[s] = encoded.sheets[s];
 				}
 
 				updateGameData('sheets', imageSheets);
-
+				updateGameData('images', _images);
 				callback();
 			}
 		}
@@ -131,7 +129,6 @@ const converter = new function() {
 				for(var s in _encoded) {
 					const sheet = _encoded[s];
 					const data = sheet.replace(/^data:image\/\w+;base64,/u, '');
-					//var buffer = new Buffer(data, 'base64');
 					const buffer = Buffer.from(data, 'base64');
 
 					fs.writeFile(`assets/test-${s}.png`, buffer, () => {
@@ -169,4 +166,7 @@ const converter = new function() {
 	};
 };
 
-module.exports = converter.encode;
+module.exports = {
+	decodeImages: converter.decode,
+	encodeImages: converter.encode
+};
