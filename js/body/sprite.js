@@ -28,15 +28,6 @@ module.exports = class Sprite extends BodyImage {
 		this.tick();
 
 		if(this.data.tiled) {
-			/*
-			const image = {
-				name:		_self.inside.image,
-				width:	Data.images[_self.inside.image].w,
-				height:	Data.images[_self.inside.image].h,
-				x:			Data.images[_self.inside.image].x,
-				y:			Data.images[_self.inside.image].y
-			};
-			*/
 			const image = getGameData('images', this.texture);
 
 			image.name = this.texture;

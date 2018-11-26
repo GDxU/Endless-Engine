@@ -8,6 +8,7 @@ module.exports = class Display {
 		this.sprite = args.sprite ? new Sprite(args.sprite, body) : false;
 		this.text = args.text ? new Text(args.text, body) : false;
 		this.layer = args.layer || '';
+		this.body = body;
 	}
 
 	render(context, vportPosition, vportSize, vportViewBounds) {
@@ -21,6 +22,18 @@ module.exports = class Display {
 
 		if(this.text) {
 			this.text.render(context, vportPosition, vportSize, vportViewBounds);
+		}
+
+		if(!this.border && !this.sprite && !this.text) {
+			const calcPosition = {
+				x: this.body.position.x + vportPosition.x,
+				y: this.body.position.y + vportPosition.y
+			};
+
+			context.fillStyle = 'green';
+			context.translate(calcPosition.x, calcPosition.y);
+			context.fillRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
+			context.translate(-calcPosition.x, -calcPosition.y);
 		}
 	}
 

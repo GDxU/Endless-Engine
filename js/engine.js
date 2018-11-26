@@ -1,7 +1,6 @@
 require('./util/array');
 require('./util/object');
 const Body = require('./body/body');
-const Bounds = require('./bounds');
 const Canvas = require('./canvas');
 const Collider = require('./collider');
 //const EventEmitter = require('./event-emitter');
@@ -28,8 +27,8 @@ module.exports = class Engine {
 		this.killSwitch = false;
 
 		const onComplete = () => {
-			console.log('image loading complete');
-			engine.start();
+			console.log('image loading complete'); // eslint-disable-line no-console
+			this.start();
 		};
 
 		decodeImages(onComplete);
@@ -37,9 +36,9 @@ module.exports = class Engine {
 		// TEMPORARY
 		const testBodyOne = new Body({
 			x: 2,
-			y: -50,
-			height: 16,
-			width: 16,
+			y: -54,
+			height: 26,
+			width: 26,
 			sprite: 'test-sprite-1',
 			layer: 'layer-1'
 		});
@@ -49,6 +48,13 @@ module.exports = class Engine {
 			height: 10,
 			width: 10,
 			sprite: 'test-sprite-2',
+			layer: 'layer-2'
+		});
+		const testBodyThree = new Body({
+			x: 50,
+			y: 40,
+			height: 36,
+			width: 80,
 			layer: 'layer-2'
 		});
 		const testWorldOne = new World();
@@ -83,19 +89,19 @@ module.exports = class Engine {
 		// world.addBody()
 		this.worlds.addItem(testWorldOne);
 
-		testWorldOne.addBodies(testBodyOne, testBodyTwo);
+		testWorldOne.addBodies(testBodyOne, testBodyTwo, testBodyThree);
 
 		this.viewports.addItem(testViewportOne);
 		this.viewports.addItem(testViewportTwo);
 
 
-		testBodyTwo.addMouseInput('mousemove', {callback: function(self, e) {
+		testBodyTwo.addMouseInput('mousemove', {callback(self, e) {
 			//console.log('mouse moving', self, e);
 		}});
-		testBodyTwo.addKeyInput('keydown', {callback: function(self, key) {
+		testBodyTwo.addKeyInput('keydown', {callback(self, key) {
 			//console.log('pressed e', self, key);
 		}, key: 'e'});
-		testBodyTwo.addMouseInput('mousedown', {callback: function() {
+		testBodyTwo.addMouseInput('mousedown', {callback() {
 			console.log('clicked body');
 		}, key: 'left'});
 

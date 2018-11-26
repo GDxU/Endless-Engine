@@ -82,8 +82,6 @@ module.exports = class Listener {
 	mouseUpInput(e) {
 		e.preventDefault();
 
-		const mouseButton	= this.constructor.getMouseEventButton(e);
-
 		this.triggerEvent(MOUSE_UP, {point: this.cursorVportPosition});
 
 		this.mouseButton	= false;
@@ -93,8 +91,6 @@ module.exports = class Listener {
 
 	mouseWheelInput(e) {
 		e.preventDefault();
-
-		const mouseButton	= this.constructor.getMouseEventButton(e);
 
 		this.direction		= (e.deltaY > 0) ? "down" : "up";
 		this.mouseButton	= "wheel";
@@ -192,7 +188,7 @@ module.exports = class Listener {
 		}
 	}
 
-	triggerEvent(eventName, {point, scroll, key}) {
+	triggerEvent(eventName, {point, scroll}) {
 		if(this.enabled) {
 			switch(eventName) {
 				case MOUSE_DOWN:

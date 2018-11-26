@@ -43,16 +43,6 @@ module.exports = class Bounds {
 				return true;
 			}
 		}
-		/*
-		const boxOne = this.aabb;
-		const boxTwo = otherBounds.aabb;
-
-		if((boxTwo[0].x >= boxOne[0].x && boxTwo[0].x <= boxOne[1].x) || (boxOne[0].x >= boxTwo[0].x && boxOne[0].x <= boxTwo[1].x)) {
-			if((boxTwo[0].y >= boxOne[0].y && boxTwo[0].y <= boxOne[1].y) || (boxOne[0].y >= boxTwo[0].y && boxOne[0].y <= boxTwo[1].y)) {
-				return true;
-			}
-		}
-		*/
 
 		return false;
 	}
