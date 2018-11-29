@@ -1,6 +1,6 @@
 const {FONT_CHARACTERS} = require('../constants');
 
-module.exports = (dataSet, font) => {
+module.exports = (dataSet, fontName, font) => {
 	for(const i in FONT_CHARACTERS) {
 		let character = FONT_CHARACTERS[i];
 
@@ -11,12 +11,16 @@ module.exports = (dataSet, font) => {
 		const xPosition = i % font.charsPerLine * font.width;
 		const yPosition = Math.floor(i / font.charsPerLine) * font.height;
 
-		dataSet[font.sheet + '-' + character] = {
-			sheet: font.sheet,
-			x: xPosition,
-			y: yPosition,
-			w: font.width,
-			h: font.height
-		};
+		font.colors.forEach(color => {
+			const sheet = `${fontName}-${color}`;
+
+			dataSet[`${sheet}-${character}`] = {
+				sheet: sheet,
+				x: xPosition,
+				y: yPosition,
+				w: font.width,
+				h: font.height
+			};
+		});
 	}
 };

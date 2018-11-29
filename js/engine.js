@@ -40,7 +40,16 @@ module.exports = class Engine {
 			height: 26,
 			width: 26,
 			sprite: 'test-sprite-1',
-			layer: 'layer-1'
+			layer: 'layer-1',
+			text: {
+				font: 'thintel',
+				color: 'white',
+				content: 'aa1$ bb2$ cc dd',
+				vars: {
+					'1$': function() { return 'X'; },
+					'2$': function() { return 'Y'; }
+				}
+			}
 		});
 		const testBodyTwo = new Body({
 			x: 15,
@@ -51,10 +60,15 @@ module.exports = class Engine {
 			layer: 'layer-2'
 		});
 		const testBodyThree = new Body({
-			x: 50,
-			y: 40,
+			x: 0,
+			y: 0,
 			height: 36,
 			width: 80,
+			text: {
+				font: 'thintel',
+				color: 'white',
+				content: 'Lorem ipsum dolor.'
+			},
 			layer: 'layer-2'
 		});
 		const testWorldOne = new World();

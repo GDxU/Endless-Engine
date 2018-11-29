@@ -31,19 +31,6 @@ module.exports = class Renderer {
 					};
 
 					body.display.render(ctx, vportPosition, {width: viewport.width, height: viewport.height}, viewport.view.bounds);
-
-					// trim from left/right/top/bottom
-					/*
-					const left = viewport.view.bounds.aabb[0].x - body.bounds.aabb[0].x;
-					const trimLeft = left > 0 ? left : 0;
-					*/
-
-					/*
-					ctx.fillStyle = 'pink';
-					ctx.translate(position.x, position.y);
-					ctx.fillRect(-body.width / 2, -body.height / 2, body.width, body.height);
-					ctx.translate(-position.x, -position.y);
-					*/
 				}
 			}
 		});

@@ -1,29 +1,28 @@
 const BodyImage = require('./body-image');
-const {getTexture} = require('../util/tools');
+const {getGameData} = require('../../data/game-data');
 
 module.exports = class Text extends BodyImage {
-	constructor(args, argsActive, body) {
+	constructor(config, body, configActive) {
 		super();
 
 		this.body = body;
 		this.active = false;
-		this.height = 0;
-		this.width = 0;
-		this.position = {x: 0, y: 0};
 		this.scroll = {x: 0, y: 0};	// current amount text is scrolled
 		this.textHeight = 0;				// pixel height of text block
 		this.kerning = 0;					// negative right margin applied when rendering and calculating line widths
 		this.scrollingID = false;		// text scrolling setInterval ID
-		this.text = {};					// size, family, color, opacity
+		//this.text = {};					// size, family, color, opacity
 		this.printedChars = 0;
 		this.varsCache = {};				// Cache any text "vars". Changes to the values trigger reconfiguration
+		this.config = config;
+		this.configActive = configActive;
 
-		this.configure(args, argsActive);
+		this.configure(config, configActive);
 	}
 
-	render(context) {
+	render(context, vportPosition) {
 		this.updateVarsCache();
-		this.renderImageText(context);
+		this.renderImageText(context, vportPosition);
 	}
 
 	/**
@@ -35,9 +34,11 @@ module.exports = class Text extends BodyImage {
 	 * @param		{object}		fallback	An optional secondary configuration object defining "Active" state settings
 	 */
 	configure(config = {}, fallback = {}) {
+		const fonts = getGameData('fonts');
+
 		this.font		= (config.font || fallback.font) || 'thintel';
 		this.color		= (config.color || fallback.color) || 'white';
-		this.font		= `${this.font}-${this.color}`;
+		//this.font		= `${this.font}-${this.color}`;
 		this.alignment	= (config.alignment || fallback.alignment) || 'left';
 		this.padding	= (config.padding || fallback.padding) || {h: 0, v: 0};
 		this.opacity	= (config.opacity || fallback.opacity) || 1.0;
@@ -46,24 +47,22 @@ module.exports = class Text extends BodyImage {
 		this.mode		= (config.mode || config.mode) || 'source-over';
 		this.print		= (config.print || config.print) || false;
 
-		this.kerning = (Data.fonts[this.font]) ? Data.fonts[this.font].kerning : 0;
+		this.kerning = fonts[this.font] ? fonts[this.font].kerning : 0;
 
-		const fontWidth	= (Data.fonts[this.font]) ? Data.fonts[this.font].width : 1;
-		const fontHeight	= (Data.fonts[this.font]) ? Data.fonts[this.font].height : 1;
+		const fontWidth	= fonts[this.font] ? fonts[this.font].width : 1;
+		const fontHeight	= fonts[this.font] ? fonts[this.font].height : 1;
 
-		this.content = this.convertImageTextToLines((config.content || fallback.content), fontWidth, width - this.padding.h * 2 - this.padding.h * 2, this.kerning) || [];
-
+		this.content = this.convertImageTextToLines((config.content || fallback.content), fontWidth, this.body.width - this.padding.h * 2 - this.padding.h * 2, this.kerning) || [];
 		this.textHeight = this.content.length * fontHeight;
 	}
 
-
-	set active(status = false) {
+	set activity(status = false) {
 		this.active = Boolean(status);
 
 		if(this.active) {
-			this.configure(activeConfig, config);
+			this.configure(this.configActive, this.config);
 		} else {
-			this.configure(config);
+			this.configure(this.config);
 		}
 	}
 
@@ -76,7 +75,7 @@ module.exports = class Text extends BodyImage {
 		const newY = this.scroll.y + Math.floor(yScroll);
 
 		if(newY <= 0) {
-			const boxHeight = this.height - (2 * this.padding.h);
+			const boxHeight = this.body.height - (2 * this.padding.h);
 
 			if(boxHeight + Math.abs(newY) <= this.textHeight) {
 				this.scroll.y = newY;
@@ -120,68 +119,74 @@ module.exports = class Text extends BodyImage {
 		// If var values changed, reconfigure to recalculate line breaks
 		if(refresh) {
 			if(this.active) {
-				this.configure(activeConfig, config);
+				this.configure(this.configActive, this.config);
 			} else {
-				this.configure(config);
+				this.configure(this.config);
 			}
 		}
 	}
 
-	renderImageText(context) {
-		var printing = 0;
+	renderImageText(context, vportPosition) {
+		const fonts = getGameData('fonts');
+		let printing = 0;
 
 		this.printedChars++;
 
-		if( this.text.mode != 'source-over' ) {
-			context.globalCompositeOperation = this.text.mode;
+		if( this.mode != 'source-over' ) {
+			context.globalCompositeOperation = this.mode;
 		}
-		if( this.text.opacity < 1.0 ) {
-			context.globalAlpha = this.text.opacity;
+		if( this.opacity < 1.0 ) {
+			context.globalAlpha = this.opacity;
 		}
 
-		var fontData = Data.fonts[this.text.font];
+		const fontData = fonts[this.font];
+		const [boundOne] = this.body.bounds.aabb;
+		const location = {
+			x: vportPosition.x + boundOne.x,
+			y: vportPosition.y + boundOne.y
+		};
 
 		context.beginPath();
 		context.save();
 		context.rect(
-			this.position.x + this.offset.x + this.padding.h,
-			this.position.y + this.offset.y + this.padding.h,
-			this.width - (this.padding.h * 2),
-			this.height - (this.padding.h * 2)
+			location.x + this.offset.x + this.padding.h,
+			location.y + this.offset.y + this.padding.h,
+			this.body.width - (this.padding.h * 2),
+			this.body.height - (this.padding.h * 2)
 		);
 		context.clip();
 
 		linesLoop:
-		for(var index in this.text.content) {
-			var line					= this.text.content[index];
-			var lineCharacters	= line.characters;
-			var lineWidth			= line.width;
-			var lineOffset			= index * fontData.height;
-			var lineAlignOffset	= 0;
+		for(const index in this.content) {
+			const line				= this.content[index];
+			const lineWidth		= line.width;
+			const lineOffset		= index * fontData.height;
+			let lineCharacters	= line.characters;
+			let lineAlignOffset	= 0;
 
-			if( this.text.alignment == 'center' ) {
-				lineAlignOffset = (this.width - lineWidth) * 0.5;
+			if( this.alignment == 'center' ) {
+				lineAlignOffset = (this.body.width - lineWidth) * 0.5;
 			}
 
-			var textPosition	= {
-				x:	this.text.offset.x + this.position.x + this.offset.x + this.text.padding.h + this.padding.h + this.scroll.x + lineAlignOffset,
-				y:	this.text.offset.y + this.position.y + this.offset.y + this.text.padding.v + this.padding.h + this.scroll.y + lineOffset
+			const textPosition	= {
+				x:	this.offset.x + location.x + this.offset.x + this.padding.h + this.padding.h + this.scroll.x + lineAlignOffset,
+				y:	this.offset.y + location.y + this.offset.y + this.padding.v + this.padding.h + this.scroll.y + lineOffset
 			};
 
-			for(var key in this.varsCache) {
-				var keyIndex = lineCharacters.indexOf(key);
+			for(const key in this.varsCache) {
+				const keyIndex = lineCharacters.indexOf(key);
 
 				if( keyIndex != -1 ) {
-					var replacement = this.varsCache[key];
+					const replacement = this.varsCache[key];
 
 					lineCharacters = lineCharacters.replace(key, replacement);
 				}
 			}
 
 			charactersLoop:
-			for(var i in lineCharacters) {
-				if( this.text.print ) {
-					switch(this.text.print) {
+			for(const i in lineCharacters) {
+				if( this.print ) {
+					switch(this.print) {
 						case 'slow':
 							printing += 3;
 							break;
@@ -199,11 +204,11 @@ module.exports = class Text extends BodyImage {
 					}
 				}
 
-				var character	= lineCharacters[i];
-				var imageName	= this.text.font + '-' + character;
-				var escaped	= imageName.replace('.', 'escapedthis.dot'); // NEDB does not allow "." in data object properties
-				var imageData	= Data.images[escaped];
-				var texture	= getTexture(Game.Textures, escaped);
+				const character	= lineCharacters[i];
+				const imageName	= `${this.font}-${this.color}-${character}`;
+				const escaped		= imageName.replace('.', 'escaped_dot'); // NEDB does not allow "." in data object properties
+				const imageData	= getGameData('images', escaped);
+				const texture		= this.constructor.getTexture(escaped);
 
 				context.drawImage(
 					texture,
@@ -236,6 +241,7 @@ module.exports = class Text extends BodyImage {
 		if( !containerWidth || !text ) {
 			return [];
 		}
+
 		if( typeof(text) == 'string' ) {
 			text = [text];
 		}
@@ -243,13 +249,13 @@ module.exports = class Text extends BodyImage {
 		const lines = [];
 
 		// Wrap each text piece separately and maintain linebreaks
-		for(const piece of text) {
+		for(let piece of text) {
 			// Make "vars" replacements before measuring, for accurate measurements
-			for(const key in _varsCache) {
+			for(const key in this.varsCache) {
 				const keyIndex = piece.indexOf(key);
 
 				if( keyIndex != -1 ) {
-					const replacement = _varsCache[key];
+					const replacement = this.varsCache[key];
 
 					piece = piece.replace(key, replacement);
 				}

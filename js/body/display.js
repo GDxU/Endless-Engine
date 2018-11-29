@@ -12,6 +12,26 @@ module.exports = class Display {
 	}
 
 	render(context, vportPosition, vportSize, vportViewBounds) {
+		// Temporary
+		if(!this.border && !this.sprite && !this.text || true) {
+			const calcPosition = {
+				x: this.body.position.x + vportPosition.x,
+				y: this.body.position.y + vportPosition.y
+			};
+
+			/*
+			context.fillStyle = 'green';
+			context.translate(calcPosition.x, calcPosition.y);
+			context.fillRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
+			context.translate(-calcPosition.x, -calcPosition.y);
+			*/
+			context.strokeStyle = 'pink';
+			context.lineWidth = 1;
+			context.translate(calcPosition.x, calcPosition.y);
+			context.strokeRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
+			context.translate(-calcPosition.x, -calcPosition.y);
+		}
+
 		if(this.border) {
 			this.border.render(context, vportPosition, vportSize, vportViewBounds);
 		}
@@ -22,18 +42,6 @@ module.exports = class Display {
 
 		if(this.text) {
 			this.text.render(context, vportPosition, vportSize, vportViewBounds);
-		}
-
-		if(!this.border && !this.sprite && !this.text) {
-			const calcPosition = {
-				x: this.body.position.x + vportPosition.x,
-				y: this.body.position.y + vportPosition.y
-			};
-
-			context.fillStyle = 'green';
-			context.translate(calcPosition.x, calcPosition.y);
-			context.fillRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
-			context.translate(-calcPosition.x, -calcPosition.y);
 		}
 	}
 

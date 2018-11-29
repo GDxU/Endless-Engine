@@ -6,8 +6,8 @@ const images = {
 	'test-image-2': {sheet: 'test-sheet-2', x: 0, y: 0, w: 10, h: 10}
 };
 
-Object.values(fonts).forEach(font => {
-	importFont(images, font);
+Object.keys(fonts).forEach(name => {
+	importFont(images, name, fonts[name]);
 });
 
 module.exports = images;

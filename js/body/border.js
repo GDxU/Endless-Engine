@@ -1,5 +1,4 @@
 const BodyImage = require('./body-image');
-const {getTexture} = require('../util/tools');
 
 module.exports = class Border extends BodyImage {
 	constructor() {
