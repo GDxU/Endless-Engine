@@ -20,9 +20,9 @@ module.exports = class Text extends BodyImage {
 		this.configure(config, configActive);
 	}
 
-	render(context, vportPosition) {
+	render(context, vportPosition, vportSize, vportViewBounds) {
 		this.updateVarsCache();
-		this.renderImageText(context, vportPosition);
+		this.renderImageText(context, vportPosition, vportSize, vportViewBounds);
 	}
 
 	/**
@@ -126,7 +126,7 @@ module.exports = class Text extends BodyImage {
 		}
 	}
 
-	renderImageText(context, vportPosition) {
+	renderImageText(context, vportPosition, vportSize, vportViewBounds) {
 		const fonts = getGameData('fonts');
 		let printing = 0;
 
@@ -146,13 +146,20 @@ module.exports = class Text extends BodyImage {
 			y: vportPosition.y + boundOne.y
 		};
 
+		const {
+			viewLeftSlice,
+			viewRightSlice,
+			viewTopSlice,
+			viewBottomSlice
+		} = this.constructor.getViewportSlices(vportViewBounds, this.body.bounds.aabb[0], {w: this.body.width, h: this.body.height});
+
 		context.beginPath();
 		context.save();
 		context.rect(
-			location.x + this.offset.x + this.padding.h,
-			location.y + this.offset.y + this.padding.h,
-			this.body.width - (this.padding.h * 2),
-			this.body.height - (this.padding.h * 2)
+			location.x + this.offset.x + this.padding.h + viewLeftSlice,
+			location.y + this.offset.y + this.padding.h + viewTopSlice,
+			this.body.width - (this.padding.h * 2) - viewLeftSlice - viewRightSlice,
+			this.body.height - (this.padding.h * 2) - viewTopSlice - viewBottomSlice
 		);
 		context.clip();
 
@@ -255,15 +262,13 @@ module.exports = class Text extends BodyImage {
 				const keyIndex = piece.indexOf(key);
 
 				if( keyIndex != -1 ) {
-					const replacement = this.varsCache[key];
-
-					piece = piece.replace(key, replacement);
+					piece = piece.replace(key, this.varsCache[key]);
 				}
 			}
 
-			const words		= piece.split(SEPARATOR);
-			let line		= '';
-			let testWidth	= 0;
+			const words = piece.split(SEPARATOR);
+			let line = '';
+			let testWidth = 0;
 
 			for(const word of words) {
 				const measured = (word.length + 1) * FONT_SIZE;
