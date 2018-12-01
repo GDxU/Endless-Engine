@@ -52,7 +52,12 @@ module.exports = class Text extends BodyImage {
 		const fontWidth	= fonts[this.font] ? fonts[this.font].width : 1;
 		const fontHeight	= fonts[this.font] ? fonts[this.font].height : 1;
 
-		this.content = this.convertImageTextToLines((config.content || fallback.content), fontWidth, this.body.width - this.padding.h * 2 - this.padding.h * 2, this.kerning) || [];
+		this.content = this.convertImageTextToLines(
+			(config.content || fallback.content),
+			fontWidth,
+			this.body.width - (this.padding.h * 2) - (this.padding.h * 2),
+			this.kerning
+		) || [];
 		this.textHeight = this.content.length * fontHeight;
 	}
 

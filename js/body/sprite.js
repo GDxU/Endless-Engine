@@ -12,7 +12,7 @@ module.exports = class Sprite extends BodyImage {
 		this.data = getGameData('sprites', name);
 		this.tickCounter = 10000;
 		this.loopDelayCounter = 0;
-		this.frameIndex = 0;
+		this.frameIndex = -1;
 		this.texture = '';
 	}
 
@@ -27,21 +27,51 @@ module.exports = class Sprite extends BodyImage {
 	render(context, vportPosition, vportSize, vportViewBounds) {
 		this.tick();
 
+		const img = getGameData('images', this.texture);
+
+		img.name = this.texture;
+
 		if(this.data.tiled) {
-			const image = getGameData('images', this.texture);
-
-			image.name = this.texture;
-
-			Sprite.tile(image, this.body, context, vportPosition, vportSize, vportViewBounds);
+			this.constructor.tile(img, this.body, context, vportPosition, vportSize, vportViewBounds);
 		} else {
+			const [bodyBoundA] = this.body.bounds.aabb;
 			const calcPosition = {
-				x: this.body.position.x + vportPosition.x,
-				y: this.body.position.y + vportPosition.y
+				x: bodyBoundA.x + vportPosition.x,
+				y: bodyBoundA.y + vportPosition.y
 			};
 
-			context.fillStyle = 'pink';
+			//context.fillStyle = 'pink';
 			context.translate(calcPosition.x, calcPosition.y);
-			context.fillRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
+
+			//context.fillRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
+
+			const {
+				viewLeftSlice,
+				viewRightSlice,
+				viewTopSlice,
+				viewBottomSlice
+			} = this.constructor.getViewportSlices(vportViewBounds, bodyBoundA, img);
+
+			const image = BodyImage.getTexture(img.name);
+
+			context.drawImage(
+				image,
+				img.x + viewLeftSlice,
+				img.y + viewTopSlice,
+				img.w - viewRightSlice - viewLeftSlice,
+				img.h - viewBottomSlice - viewTopSlice,
+				viewLeftSlice,
+				viewTopSlice,
+				img.w - viewRightSlice - viewLeftSlice,
+				img.h - viewBottomSlice - viewTopSlice
+				/*
+				x + vportPosition.x + viewLeftSlice,
+				y + vportPosition.y + viewTopSlice,
+				img.w - viewRightSlice - viewLeftSlice,
+				img.h - viewBottomSlice - viewTopSlice
+				*/
+			);
+
 			context.translate(-calcPosition.x, -calcPosition.y);
 		}
 	}
@@ -101,6 +131,7 @@ module.exports = class Sprite extends BodyImage {
 				body.frames.frameIndex++;
 			}
 			*/
+			this.frameIndex++; // temp
 
 			// Have sprite frames loop back to first frame
 			if( this.frameIndex >= currentSet.frames.length || refresh ) {

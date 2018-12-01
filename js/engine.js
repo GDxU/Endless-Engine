@@ -52,8 +52,8 @@ module.exports = class Engine {
 			}
 		});
 		const testBodyTwo = new Body({
-			x: 15,
-			y: 15,
+			x: 60,
+			y: 60,
 			height: 10,
 			width: 10,
 			sprite: 'test-sprite-2',

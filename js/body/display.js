@@ -27,9 +27,9 @@ module.exports = class Display {
 			*/
 			context.strokeStyle = 'pink';
 			context.lineWidth = 1;
-			context.translate(calcPosition.x, calcPosition.y);
-			context.strokeRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
-			context.translate(-calcPosition.x, -calcPosition.y);
+			context.translate(calcPosition.x + 0.5, calcPosition.y + 0.5);
+			context.strokeRect(-this.body.width / 2, -this.body.height / 2, this.body.width - 1, this.body.height - 1);
+			context.translate(-calcPosition.x - 0.5, -calcPosition.y - 0.5);
 		}
 
 		if(this.border) {
