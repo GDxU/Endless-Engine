@@ -35,8 +35,8 @@ module.exports = class Engine {
 
 		// TEMPORARY
 		const testBodyOne = new Body({
-			x: 2,
-			y: -54,
+			x: 19,
+			y: 6,
 			height: 26,
 			width: 26,
 			sprite: 'test-sprite-1',
@@ -46,16 +46,16 @@ module.exports = class Engine {
 				color: 'white',
 				content: 'aa1$ bb2$ cc dd',
 				vars: {
-					'1$': function() { return 'X'; },
-					'2$': function() { return 'Y'; }
+					'1$': () => 'X',
+					'2$': () => 'Y'
 				}
 			}
 		});
 		const testBodyTwo = new Body({
-			x: 60,
-			y: 60,
-			height: 10,
-			width: 10,
+			x: 23,
+			y: 85,
+			height: 30,
+			width: 30,
 			sprite: 'test-sprite-2',
 			layer: 'layer-2'
 		});
@@ -73,24 +73,24 @@ module.exports = class Engine {
 		});
 		const testWorldOne = new World();
 		const testViewportOne = new Viewport({
-			x: 65,
-			y: 80,
+			x: 10,
+			y: 20,
 			width: 120,
 			height: 120,
 			view: {
 				x: 0,
-				y: 0
+				y: 10
 			},
 			world: testWorldOne
 		});
 		const testViewportTwo = new Viewport({
-			x: 310,
-			y: 140,
+			x: 250,
+			y: 70,
 			width: 170,
 			height: 170,
 			view: {
-				x: 86,
-				y: 30
+				x: 40,
+				y: 10
 			},
 			world: testWorldOne,
 			listeners: {
@@ -103,7 +103,7 @@ module.exports = class Engine {
 		// world.addBody()
 		this.worlds.addItem(testWorldOne);
 
-		testWorldOne.addBodies(testBodyOne, testBodyTwo, testBodyThree);
+		testWorldOne.addBodies(testBodyOne, testBodyTwo);
 
 		this.viewports.addItem(testViewportOne);
 		this.viewports.addItem(testViewportTwo);

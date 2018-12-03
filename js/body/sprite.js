@@ -1,7 +1,7 @@
 const BodyImage = require('./body-image');
 const {getGameData} = require('../../data/game-data');
 const {SPRITE} = require('../constants');
-const {FACINGS, MODES, MODE_FALLBACKS} = SPRITE;
+const {FACINGS, MODE_FALLBACKS} = SPRITE; // MODES
 
 module.exports = class Sprite extends BodyImage {
 	constructor(name, body) {
@@ -35,43 +35,34 @@ module.exports = class Sprite extends BodyImage {
 			this.constructor.tile(img, this.body, context, vportPosition, vportSize, vportViewBounds);
 		} else {
 			const [bodyBoundA] = this.body.bounds.aabb;
-			const calcPosition = {
-				x: bodyBoundA.x + vportPosition.x,
-				y: bodyBoundA.y + vportPosition.y
+			const spriteBoundA = {
+				x: Math.floor(this.body.width / 2 - img.w / 2),
+				y: Math.floor(this.body.height / 2 - img.h / 2)
 			};
-
-			//context.fillStyle = 'pink';
-			context.translate(calcPosition.x, calcPosition.y);
-
-			//context.fillRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
-
+			const calcPosition = {
+				x: this.body.position.x + vportPosition.x,
+				y: this.body.position.y + vportPosition.y
+			};
 			const {
 				viewLeftSlice,
 				viewRightSlice,
 				viewTopSlice,
 				viewBottomSlice
-			} = this.constructor.getViewportSlices(vportViewBounds, bodyBoundA, img);
-
+			} = this.constructor.getViewportSlices(vportViewBounds, {x: this.body.position.x + spriteBoundA.x, y: this.body.position.y + spriteBoundA.y}, img);
 			const image = BodyImage.getTexture(img.name);
 
+			context.translate(calcPosition.x, calcPosition.y);
 			context.drawImage(
 				image,
 				img.x + viewLeftSlice,
 				img.y + viewTopSlice,
 				img.w - viewRightSlice - viewLeftSlice,
 				img.h - viewBottomSlice - viewTopSlice,
-				viewLeftSlice,
-				viewTopSlice,
+				spriteBoundA.x + viewLeftSlice,
+				spriteBoundA.y + viewTopSlice,
 				img.w - viewRightSlice - viewLeftSlice,
 				img.h - viewBottomSlice - viewTopSlice
-				/*
-				x + vportPosition.x + viewLeftSlice,
-				y + vportPosition.y + viewTopSlice,
-				img.w - viewRightSlice - viewLeftSlice,
-				img.h - viewBottomSlice - viewTopSlice
-				*/
 			);
-
 			context.translate(-calcPosition.x, -calcPosition.y);
 		}
 	}

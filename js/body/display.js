@@ -19,16 +19,10 @@ module.exports = class Display {
 				y: this.body.position.y + vportPosition.y
 			};
 
-			/*
-			context.fillStyle = 'green';
-			context.translate(calcPosition.x, calcPosition.y);
-			context.fillRect(-this.body.width / 2, -this.body.height / 2, this.body.width, this.body.height);
-			context.translate(-calcPosition.x, -calcPosition.y);
-			*/
 			context.strokeStyle = 'pink';
 			context.lineWidth = 1;
 			context.translate(calcPosition.x + 0.5, calcPosition.y + 0.5);
-			context.strokeRect(-this.body.width / 2, -this.body.height / 2, this.body.width - 1, this.body.height - 1);
+			context.strokeRect(0, 0, this.body.width - 1, this.body.height - 1);
 			context.translate(-calcPosition.x - 0.5, -calcPosition.y - 0.5);
 		}
 

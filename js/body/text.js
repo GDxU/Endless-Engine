@@ -33,12 +33,12 @@ module.exports = class Text extends BodyImage {
 	 * @param		{object}		config	A configuration object defining "Normal" state settings
 	 * @param		{object}		fallback	An optional secondary configuration object defining "Active" state settings
 	 */
+	// eslint-disable-next-line complexity
 	configure(config = {}, fallback = {}) {
 		const fonts = getGameData('fonts');
 
 		this.font		= (config.font || fallback.font) || 'thintel';
 		this.color		= (config.color || fallback.color) || 'white';
-		//this.font		= `${this.font}-${this.color}`;
 		this.alignment	= (config.alignment || fallback.alignment) || 'left';
 		this.padding	= (config.padding || fallback.padding) || {h: 0, v: 0};
 		this.opacity	= (config.opacity || fallback.opacity) || 1.0;
@@ -168,7 +168,6 @@ module.exports = class Text extends BodyImage {
 		);
 		context.clip();
 
-		linesLoop:
 		for(const index in this.content) {
 			const line				= this.content[index];
 			const lineWidth		= line.width;
@@ -207,6 +206,7 @@ module.exports = class Text extends BodyImage {
 							break;
 						case 'fast':
 							printing += 1;
+							break;
 						default:
 							break;
 					}
@@ -249,19 +249,15 @@ module.exports = class Text extends BodyImage {
 	convertImageTextToLines(text = false, fontSize = 16, containerWidth = false, kerning = 0) {
 		const SEPARATOR = ' ';
 		const FONT_SIZE = fontSize + kerning;
+		const textPieces = (typeof(text) == 'string') ? [text] : text;
+		const lines = [];
 
 		if( !containerWidth || !text ) {
 			return [];
 		}
 
-		if( typeof(text) == 'string' ) {
-			text = [text];
-		}
-
-		const lines = [];
-
 		// Wrap each text piece separately and maintain linebreaks
-		for(let piece of text) {
+		for(let piece of textPieces) {
 			// Make "vars" replacements before measuring, for accurate measurements
 			for(const key in this.varsCache) {
 				const keyIndex = piece.indexOf(key);

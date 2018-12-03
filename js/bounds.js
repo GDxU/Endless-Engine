@@ -6,10 +6,7 @@ module.exports = class Bounds {
 	}
 
 	static calcAABB({width, height, x, y}) {
-		const topLeft = {
-			x: x - (width / 2),
-			y: y - (height / 2)
-		};
+		const topLeft = {x, y};
 		const bottomRight = {
 			x: topLeft.x + width,
 			y: topLeft.y + height

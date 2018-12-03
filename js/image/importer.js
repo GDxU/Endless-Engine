@@ -15,7 +15,7 @@ module.exports = (dataSet, fontName, font) => {
 			const sheet = `${fontName}-${color}`;
 
 			dataSet[`${sheet}-${character}`] = {
-				sheet: sheet,
+				sheet,
 				x: xPosition,
 				y: yPosition,
 				w: font.width,

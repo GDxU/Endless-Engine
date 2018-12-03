@@ -44,7 +44,7 @@ module.exports = class KeyListener {
 		}
 	}
 
-	testEvent(eventName, bodyList = new List(), key) {
+	static testEvent(eventName, bodyList = new List(), key) {
 		bodyList.eachItem((body) => {
 			const {callback} = body.hasKeyInput(eventName, key);
 
@@ -58,10 +58,10 @@ module.exports = class KeyListener {
 		if(this.enabled) {
 			switch(eventName) {
 				case KEY_DOWN:
-					this.testEvent(eventName, this.keyboardDownBodies, key);
+					this.constructor.testEvent(eventName, this.keyboardDownBodies, key);
 					break;
 				case KEY_UP:
-					this.testEvent(eventName, this.keyboardUpBodies, key);
+					this.constructor.testEvent(eventName, this.keyboardUpBodies, key);
 					break;
 				default:
 					break;

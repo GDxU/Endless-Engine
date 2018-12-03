@@ -23,10 +23,17 @@ module.exports = class BodyImage {
 
 	static getViewportSlices(vportViewBounds, position, imageSize) {
 		const [vportBoundA, vportBoundB] = vportViewBounds.aabb;
-		const viewLeftSlice		= position.x < vportBoundA.x ? Math.abs(position.x - vportBoundA.x) : 0;
-		const viewRightSlice		= position.x + imageSize.w > vportBoundB.x ? (position.x + imageSize.w) - vportBoundB.x : 0;
-		const viewTopSlice		= position.y < vportBoundA.y ? Math.abs(position.y - vportBoundA.y) : 0;
-		const viewBottomSlice	= position.y + imageSize.h > vportBoundB.y ? (position.y + imageSize.h) - vportBoundB.y : 0;
+		let viewLeftSlice		= position.x < vportBoundA.x ? Math.abs(position.x - vportBoundA.x) : 0;
+		let viewRightSlice	= position.x + imageSize.w > vportBoundB.x ? (position.x + imageSize.w) - vportBoundB.x : 0;
+		let viewTopSlice		= position.y < vportBoundA.y ? Math.abs(position.y - vportBoundA.y) : 0;
+		let viewBottomSlice	= position.y + imageSize.h > vportBoundB.y ? (position.y + imageSize.h) - vportBoundB.y : 0;
+
+		if(viewLeftSlice > imageSize.w) {
+			viewLeftSlice = imageSize.w;
+		}
+		if(viewTopSlice > imageSize.h) {
+			viewTopSlice = imageSize.h;
+		}
 
 		return {
 			viewLeftSlice,
@@ -48,6 +55,11 @@ module.exports = class BodyImage {
 					viewTopSlice,
 					viewBottomSlice
 				} = BodyImage.getViewportSlices(vportViewBounds, {x, y}, img);
+
+				if(viewLeftSlice == img.w && viewTopSlice == img.h) {
+					continue;
+				}
+
 				const xOverflow	= x + img.w;
 				const yOverflow	= y + img.h;
 				const xSlice		= (xOverflow > xMax) ? (xOverflow - xMax) : 0;

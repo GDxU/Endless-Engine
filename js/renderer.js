@@ -20,11 +20,6 @@ module.exports = class Renderer {
 		bodies.forEach((body) => {
 			if(body.visible) {
 				if( viewport.view.bounds.intersect(body.bounds) ) {
-					const position = {
-						x: body.position.x + viewport.position.x - viewport.view.position.x,
-						y: body.position.y + viewport.position.y - viewport.view.position.y
-					};
-
 					const vportPosition = {
 						x: viewport.position.x - viewport.view.position.x,
 						y: viewport.position.y - viewport.view.position.y

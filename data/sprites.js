@@ -1,6 +1,6 @@
 module.exports = {
 	'test-sprite-1': 	{
-		ticksPerFrame: 40,
+		ticksPerFrame: 100,
 		loop: true,
 		tiled: true,
 		padding: 0,
