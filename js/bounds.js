@@ -16,7 +16,7 @@ module.exports = class Bounds {
 	}
 
 	update(args) {
-		this.constructor.calcAABB(args);
+		this.aabb = this.constructor.calcAABB(args);
 	}
 
 	encompass(point) {

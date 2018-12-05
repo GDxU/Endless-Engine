@@ -8,7 +8,8 @@ constants.CANVAS = {
 };
 
 constants.COLLIDER = {
-	PARTITION_SIZE: 400
+	EDGE_BUFFER: 10,
+	PARTITION_SIZE: 50//400
 };
 
 constants.LISTENER = {

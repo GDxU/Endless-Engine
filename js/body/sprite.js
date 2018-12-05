@@ -50,18 +50,24 @@ module.exports = class Sprite extends BodyImage {
 				viewBottomSlice
 			} = this.constructor.getViewportSlices(vportViewBounds, {x: this.body.position.x + spriteBoundA.x, y: this.body.position.y + spriteBoundA.y}, img);
 			const image = BodyImage.getTexture(img.name);
+			const printedWidth = img.w - viewRightSlice - viewLeftSlice;
+			const printedHeight = img.h - viewBottomSlice - viewTopSlice;
+
+			if( printedWidth <= 0 || printedHeight <= 0 ) {
+				return;
+			}
 
 			context.translate(calcPosition.x, calcPosition.y);
 			context.drawImage(
 				image,
 				img.x + viewLeftSlice,
 				img.y + viewTopSlice,
-				img.w - viewRightSlice - viewLeftSlice,
-				img.h - viewBottomSlice - viewTopSlice,
+				printedWidth,
+				printedHeight,
 				spriteBoundA.x + viewLeftSlice,
 				spriteBoundA.y + viewTopSlice,
-				img.w - viewRightSlice - viewLeftSlice,
-				img.h - viewBottomSlice - viewTopSlice
+				printedWidth,
+				printedHeight
 			);
 			context.translate(-calcPosition.x, -calcPosition.y);
 		}

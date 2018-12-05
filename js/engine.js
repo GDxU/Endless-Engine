@@ -35,10 +35,11 @@ module.exports = class Engine {
 
 		// TEMPORARY
 		const testBodyOne = new Body({
-			x: 19,
-			y: 6,
+			x: -20,
+			y: 26,
 			height: 26,
 			width: 26,
+			//velocity: {x: 0.25, y: 0},
 			sprite: 'test-sprite-1',
 			layer: 'layer-1',
 			text: {
@@ -52,10 +53,11 @@ module.exports = class Engine {
 			}
 		});
 		const testBodyTwo = new Body({
-			x: 23,
+			x: 197,
 			y: 85,
 			height: 30,
 			width: 30,
+			//velocity: {x: 0.11, y: 0},
 			sprite: 'test-sprite-2',
 			layer: 'layer-2'
 		});
@@ -75,11 +77,11 @@ module.exports = class Engine {
 		const testViewportOne = new Viewport({
 			x: 10,
 			y: 20,
-			width: 120,
-			height: 120,
+			width: 100,
+			height: 100,
 			view: {
 				x: 0,
-				y: 10
+				y: 30
 			},
 			world: testWorldOne
 		});
@@ -103,7 +105,7 @@ module.exports = class Engine {
 		// world.addBody()
 		this.worlds.addItem(testWorldOne);
 
-		testWorldOne.addBodies(testBodyOne, testBodyTwo);
+		testWorldOne.addBodies(testBodyOne);
 
 		this.viewports.addItem(testViewportOne);
 		this.viewports.addItem(testViewportTwo);
@@ -157,7 +159,7 @@ module.exports = class Engine {
 	}
 
 	resolvePositions() {
-		//thhis.worlds.getItems().forEach((world) => _collider.resolve(world));
+		this.worlds.getItems().forEach((world) => this.collider.resolve(world));
 	}
 
 	tick() {

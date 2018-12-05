@@ -49,32 +49,34 @@ module.exports = class BodyImage {
 
 		for(let {x} = boundA, xMax = boundB.x; x < xMax; x += img.w) {
 			for(let {y} = boundA, yMax = boundB.y; y < yMax; y += img.h) {
+				const xOverflow	= x + img.w;
+				const yOverflow	= y + img.h;
+				const xSlice		= (xOverflow > xMax) ? (xOverflow - xMax) : 0;
+				const ySlice		= (yOverflow > yMax) ? (yOverflow - yMax) : 0;
 				const {
 					viewLeftSlice,
 					viewRightSlice,
 					viewTopSlice,
 					viewBottomSlice
-				} = BodyImage.getViewportSlices(vportViewBounds, {x, y}, img);
+				} = BodyImage.getViewportSlices(vportViewBounds, {x, y}, {w: img.w - xSlice, h: img.h - ySlice});
+				const printedWidth = img.w - xSlice - viewRightSlice - viewLeftSlice;
+				const printedHeight = img.h - ySlice - viewBottomSlice - viewTopSlice;
+				console.log(`${x}-${y}`, viewLeftSlice, viewRightSlice)
 
-				if(viewLeftSlice == img.w && viewTopSlice == img.h) {
+				if(printedWidth <= 0 || printedHeight <= 0) {
 					continue;
 				}
-
-				const xOverflow	= x + img.w;
-				const yOverflow	= y + img.h;
-				const xSlice		= (xOverflow > xMax) ? (xOverflow - xMax) : 0;
-				const ySlice		= (yOverflow > yMax) ? (yOverflow - yMax) : 0;
 
 				context.drawImage(
 					image,
 					img.x + viewLeftSlice,
 					img.y + viewTopSlice,
-					img.w - xSlice - viewRightSlice - viewLeftSlice,
-					img.h - ySlice - viewBottomSlice - viewTopSlice,
+					printedWidth,
+					printedHeight,
 					x + vportPosition.x + viewLeftSlice,
 					y + vportPosition.y + viewTopSlice,
-					img.w - xSlice - viewRightSlice - viewLeftSlice,
-					img.h - ySlice - viewBottomSlice - viewTopSlice
+					printedWidth,
+					printedHeight
 				);
 			}
 		}
