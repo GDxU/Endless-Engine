@@ -1,6 +1,12 @@
+const Bounds = require('./bounds');
 const {COLLIDER: {PARTITION_SIZE, EDGE_BUFFER}} = require('./constants');
 
 module.exports = class Collider {
+	constructor() {
+		this.moveable = {};
+		this.blocked = {};
+	}
+
 	static getBodyPartitions(body) {
 		const [boundA, boundB] = body.bounds.aabb;
 		const lower = {
@@ -47,28 +53,69 @@ module.exports = class Collider {
 		return buckets;
 	}
 
-	static resolveBody(body, blockage, blocker) {
-		if(!blockage) {
+	static resolveBody(body, blocker) {
+		if(!body.velocity.x && !body.velocity.y) {
+			return;
+		}
+		if(!blocker) {
 			body.position.x += body.velocity.x;
 			body.position.y += body.velocity.y;
 			body.bounds.update({width: body.width, height: body.height, x: Math.floor(body.position.x), y: Math.floor(body.position.y)});
 		} else {
-			// push body close to blocker and inform each of collision event
+			// push A closer to B, or B closer to A depending on non-zero velocities
+			// inform each body of collision event
 		}
 	}
 
-	static resolvePartition(bodies) {
+	resolvePartition(bodies) {
 		if(bodies.length == 1) {
-			this.resolveBody(bodies[0]);
+			const [body] = bodies;
+
+			if(!this.blocked[`${body.id}`]) {
+				this.moveable[`${body.id}`] = body;
+			}
 		} else {
 			for(let a = 0; a < bodies.length; a++) {
 				const bodyA = bodies[a];
+				const newBodyAPosition = {
+					x: bodyA.position.x + bodyA.velocity.x,
+					y: bodyA.position.y + bodyA.velocity.y
+				};
+				const newBodyABounds = new Bounds(bodyA.width, bodyA.height, newBodyAPosition);
+				let clear = true;
 
 				if(bodies[a + 1]) {
+					bodyLoopB:
 					for(let b = a + 1; b < bodies.length; b++) {
 						const bodyB = bodies[b];
+						const newBodyBPosition = {
+							x: bodyB.position.x + bodyB.velocity.x,
+							y: bodyB.position.y + bodyB.velocity.y
+						};
 
-						// compare bodyA and bodyB for potential collisions
+						if(!bodyA.velocity.x && !bodyA.velocity.y && !bodyB.velocity.x && !bodyB.velocity.y) {
+							continue bodyLoopB;
+						}
+
+						const newBodyBBounds = new Bounds(bodyB.width, bodyB.height, newBodyBPosition);
+
+						if(newBodyABounds.intersect(newBodyBBounds)) {
+							clear = false;
+							this.blocked[`${bodyA.id}`] = bodyA;
+							this.blocked[`${bodyB.id}`] = bodyB;
+
+							if(this.moveable[`${bodyA.id}`]) {
+								delete this.moveable[`${bodyA.id}`];
+							}
+							if(this.moveable[`${bodyB.id}`]) {
+								delete this.moveable[`${bodyB.id}`];
+							}
+						}
+					}
+				}
+				if(clear) {
+					if(!this.blocked[`${bodyA.id}`]) {
+						this.moveable[`${bodyA.id}`] = bodyA;
 					}
 				}
 			}
@@ -79,8 +126,17 @@ module.exports = class Collider {
 		const partitions = this.constructor.getBuckets(world.getBodies());
 
 		for(const i in partitions) {
-			//console.log(i, partitions[i]);
-			this.constructor.resolvePartition(partitions[i]);
+			this.resolvePartition(partitions[i]);
 		}
+
+		Object.values(this.moveable).forEach(body => {
+			this.constructor.resolveBody(body);
+		});
+		Object.values(this.blocked).forEach(body => {
+			//this.constructor.resolveBody(body);
+		});
+
+		this.moveable = {};
+		this.blocked = {};
 	}
 }

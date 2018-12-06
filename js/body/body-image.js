@@ -61,7 +61,6 @@ module.exports = class BodyImage {
 				} = BodyImage.getViewportSlices(vportViewBounds, {x, y}, {w: img.w - xSlice, h: img.h - ySlice});
 				const printedWidth = img.w - xSlice - viewRightSlice - viewLeftSlice;
 				const printedHeight = img.h - ySlice - viewBottomSlice - viewTopSlice;
-				console.log(`${x}-${y}`, viewLeftSlice, viewRightSlice)
 
 				if(printedWidth <= 0 || printedHeight <= 0) {
 					continue;

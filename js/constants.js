@@ -9,7 +9,7 @@ constants.CANVAS = {
 
 constants.COLLIDER = {
 	EDGE_BUFFER: 10,
-	PARTITION_SIZE: 50//400
+	PARTITION_SIZE: 200//400
 };
 
 constants.LISTENER = {

@@ -39,7 +39,7 @@ module.exports = class Engine {
 			y: 26,
 			height: 26,
 			width: 26,
-			//velocity: {x: 0.25, y: 0},
+			velocity: {x: 0.5, y: 0},
 			sprite: 'test-sprite-1',
 			layer: 'layer-1',
 			text: {
@@ -54,10 +54,10 @@ module.exports = class Engine {
 		});
 		const testBodyTwo = new Body({
 			x: 197,
-			y: 85,
+			y: 45,
 			height: 30,
 			width: 30,
-			//velocity: {x: 0.11, y: 0},
+			velocity: {x: -0.35, y: 0},
 			sprite: 'test-sprite-2',
 			layer: 'layer-2'
 		});
@@ -105,7 +105,7 @@ module.exports = class Engine {
 		// world.addBody()
 		this.worlds.addItem(testWorldOne);
 
-		testWorldOne.addBodies(testBodyOne);
+		testWorldOne.addBodies(testBodyOne, testBodyTwo);
 
 		this.viewports.addItem(testViewportOne);
 		this.viewports.addItem(testViewportTwo);
