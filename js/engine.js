@@ -54,10 +54,10 @@ module.exports = class Engine {
 		});
 		const testBodyTwo = new Body({
 			x: 197,
-			y: 45,
+			y: 90,
 			height: 30,
 			width: 30,
-			velocity: {x: -0.35, y: 0},
+			velocity: {x: -0.35, y: -0.25},
 			sprite: 'test-sprite-2',
 			layer: 'layer-2'
 		});
@@ -66,6 +66,19 @@ module.exports = class Engine {
 			y: 0,
 			height: 36,
 			width: 80,
+			text: {
+				font: 'thintel',
+				color: 'white',
+				content: 'Lorem ipsum dolor.'
+			},
+			layer: 'layer-2'
+		});
+		const testBodyFour = new Body({
+			x: 40,
+			y: 160,
+			height: 20,
+			width: 20,
+			velocity: {x: 0.5, y: -0.75},
 			text: {
 				font: 'thintel',
 				color: 'white',
@@ -105,7 +118,7 @@ module.exports = class Engine {
 		// world.addBody()
 		this.worlds.addItem(testWorldOne);
 
-		testWorldOne.addBodies(testBodyOne, testBodyTwo);
+		testWorldOne.addBodies(testBodyOne, testBodyTwo, testBodyFour);
 
 		this.viewports.addItem(testViewportOne);
 		this.viewports.addItem(testViewportTwo);

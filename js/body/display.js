@@ -15,8 +15,8 @@ module.exports = class Display {
 		// Temporary
 		if(!this.border && !this.sprite && !this.text || true) {
 			const calcPosition = {
-				x: this.body.position.x + vportPosition.x,
-				y: this.body.position.y + vportPosition.y
+				x: Math.round(this.body.position.x) + vportPosition.x,
+				y: Math.round(this.body.position.y) + vportPosition.y
 			};
 
 			context.strokeStyle = 'pink';

@@ -36,19 +36,19 @@ module.exports = class Sprite extends BodyImage {
 		} else {
 			const [bodyBoundA] = this.body.bounds.aabb;
 			const spriteBoundA = {
-				x: Math.floor(this.body.width / 2 - img.w / 2),
-				y: Math.floor(this.body.height / 2 - img.h / 2)
+				x: Math.round(this.body.width / 2 - img.w / 2),
+				y: Math.round(this.body.height / 2 - img.h / 2)
 			};
 			const calcPosition = {
-				x: this.body.position.x + vportPosition.x,
-				y: this.body.position.y + vportPosition.y
+				x: Math.round(this.body.position.x) + vportPosition.x,
+				y: Math.round(this.body.position.y) + vportPosition.y
 			};
 			const {
 				viewLeftSlice,
 				viewRightSlice,
 				viewTopSlice,
 				viewBottomSlice
-			} = this.constructor.getViewportSlices(vportViewBounds, {x: this.body.position.x + spriteBoundA.x, y: this.body.position.y + spriteBoundA.y}, img);
+			} = this.constructor.getViewportSlices(vportViewBounds, {x: Math.round(this.body.position.x) + spriteBoundA.x, y: Math.round(this.body.position.y) + spriteBoundA.y}, img);
 			const image = BodyImage.getTexture(img.name);
 			const printedWidth = img.w - viewRightSlice - viewLeftSlice;
 			const printedHeight = img.h - viewBottomSlice - viewTopSlice;

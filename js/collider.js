@@ -4,7 +4,8 @@ const {COLLIDER: {PARTITION_SIZE, EDGE_BUFFER}} = require('./constants');
 module.exports = class Collider {
 	constructor() {
 		this.moveable = {};
-		this.blocked = {};
+		this.blockedX = {};
+		this.blockedY = {};
 	}
 
 	static getBodyPartitions(body) {
@@ -53,35 +54,67 @@ module.exports = class Collider {
 		return buckets;
 	}
 
-	static resolveBody(body, blocker) {
+	static resolveMovingBody(body) {
 		if(!body.velocity.x && !body.velocity.y) {
 			return;
 		}
-		if(!blocker) {
-			body.position.x += body.velocity.x;
-			body.position.y += body.velocity.y;
-			body.bounds.update({width: body.width, height: body.height, x: Math.floor(body.position.x), y: Math.floor(body.position.y)});
-		} else {
-			// push A closer to B, or B closer to A depending on non-zero velocities
-			// inform each body of collision event
+
+		body.position.x += body.velocity.x;
+		body.position.y += body.velocity.y;
+		body.bounds.update({width: body.width, height: body.height, x: Math.round(body.position.x), y: Math.round(body.position.y)});
+	}
+
+	resolveBlockedXBody(body, blocker) {
+		// approach as close as possible to blockage, then reduce speed to zero
+
+		body.velocity.x = 0;
+
+		if(!this.blockedY[body.id]) {
+			this.constructor.resolveMovingBody(body);
 		}
+
+		// inform each body of collision event
+	}
+
+	resolveBlockedYBody(body, blocker) {
+		// approach
+
+		body.velocity.y = 0;
+
+		if(!this.blockedX[body.id]) {
+			this.constructor.resolveMovingBody(body);
+		}
+
+		// inform each body of collision event
 	}
 
 	resolvePartition(bodies) {
 		if(bodies.length == 1) {
 			const [body] = bodies;
 
-			if(!this.blocked[`${body.id}`]) {
-				this.moveable[`${body.id}`] = body;
+			if(!this.blockedX[body.id] && !this.blockedY[body.id]) {
+				this.moveable[body.id] = body;
 			}
 		} else {
 			for(let a = 0; a < bodies.length; a++) {
 				const bodyA = bodies[a];
+				/*
 				const newBodyAPosition = {
 					x: bodyA.position.x + bodyA.velocity.x,
 					y: bodyA.position.y + bodyA.velocity.y
 				};
 				const newBodyABounds = new Bounds(bodyA.width, bodyA.height, newBodyAPosition);
+				*/
+				const newBodyAPositionX = {
+					x: bodyA.position.x + bodyA.velocity.x,
+					y: bodyA.position.y
+				};
+				const newBodyAPositionY = {
+					x: bodyA.position.x,
+					y: bodyA.position.y + bodyA.velocity.y
+				};
+				const newBodyABoundsX = new Bounds(bodyA.width, bodyA.height, newBodyAPositionX);
+				const newBodyABoundsY = new Bounds(bodyA.width, bodyA.height, newBodyAPositionY);
 				let clear = true;
 
 				if(bodies[a + 1]) {
@@ -99,23 +132,44 @@ module.exports = class Collider {
 
 						const newBodyBBounds = new Bounds(bodyB.width, bodyB.height, newBodyBPosition);
 
-						if(newBodyABounds.intersect(newBodyBBounds)) {
+						if(newBodyABoundsX.intersect(newBodyBBounds) || newBodyABoundsY.intersect(newBodyBBounds)) {
 							clear = false;
-							this.blocked[`${bodyA.id}`] = bodyA;
-							this.blocked[`${bodyB.id}`] = bodyB;
 
-							if(this.moveable[`${bodyA.id}`]) {
-								delete this.moveable[`${bodyA.id}`];
+							const newBodyBPositionX = {
+								x: bodyB.position.x + bodyB.velocity.x,
+								y: bodyB.position.y
+							};
+							const newBodyBPositionY = {
+								x: bodyB.position.x,
+								y: bodyB.position.y + bodyB.velocity.y,
+							};
+							const newBodyBBoundsX = new Bounds(bodyB.width, bodyB.height, newBodyBPositionX);
+							const newBodyBBoundsY = new Bounds(bodyB.width, bodyB.height, newBodyBPositionY);
+
+							if(newBodyABoundsX.intersect(newBodyBBoundsX)) {
+								this.blockedX[bodyA.id] = bodyA;
+								this.blockedX[bodyB.id] = bodyB;
 							}
-							if(this.moveable[`${bodyB.id}`]) {
-								delete this.moveable[`${bodyB.id}`];
+
+							if(newBodyABoundsY.intersect(newBodyBBoundsY)) {
+								this.blockedY[bodyA.id] = bodyA;
+								this.blockedY[bodyB.id] = bodyB;
+							}
+
+							if(this.moveable[bodyA.id]) {
+								delete this.moveable[bodyA.id];
+							}
+
+							if(this.moveable[bodyB.id]) {
+								delete this.moveable[bodyB.id];
 							}
 						}
 					}
 				}
+
 				if(clear) {
-					if(!this.blocked[`${bodyA.id}`]) {
-						this.moveable[`${bodyA.id}`] = bodyA;
+					if(!this.blockedX[bodyA.id] && !this.blockedY[bodyA.id]) {
+						this.moveable[bodyA.id] = bodyA;
 					}
 				}
 			}
@@ -130,13 +184,17 @@ module.exports = class Collider {
 		}
 
 		Object.values(this.moveable).forEach(body => {
-			this.constructor.resolveBody(body);
+			this.constructor.resolveMovingBody(body);
 		});
-		Object.values(this.blocked).forEach(body => {
-			//this.constructor.resolveBody(body);
+		Object.values(this.blockedX).forEach(body => {
+			this.resolveBlockedXBody(body);
+		});
+		Object.values(this.blockedY).forEach(body => {
+			this.resolveBlockedYBody(body);
 		});
 
 		this.moveable = {};
-		this.blocked = {};
+		this.blockedX = {};
+		this.blockedY = {};
 	}
 }
