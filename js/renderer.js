@@ -12,6 +12,10 @@ module.exports = class Renderer {
 	}
 
 	static drawViewport(elem, ctx, viewport) {
+		if(!viewport.enabled) {
+			return;
+		}
+
 		ctx.fillStyle = '#001050';
 		ctx.fillRect(viewport.bounds.aabb[0].x, viewport.bounds.aabb[0].y, viewport.width, viewport.height);
 

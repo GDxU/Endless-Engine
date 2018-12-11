@@ -1,5 +1,6 @@
+/* eslint-disable max-depth, no-bitwise */
 const Bounds = require('./bounds');
-const {COLLIDER: {PARTITION_SIZE, EDGE_BUFFER}} = require('./constants');
+const {COLLIDER: {PARTITION_SIZE, EDGE_BUFFER, BITMASKS}} = require('./constants');
 
 module.exports = class Collider {
 	constructor() {
@@ -88,6 +89,31 @@ module.exports = class Collider {
 		// inform each body of collision event
 	}
 
+	static bodiesCanInteract(bodyA, bodyB) {
+		const bitmaskA = BITMASKS[bodyA.bitmask];
+		const bitmaskB = BITMASKS[bodyB.bitmask];
+
+		if( (bitmaskB.category & bitmaskA.mask) == bitmaskB.category ) {
+			if( (bitmaskA.category & bitmaskB.mask) == bitmaskA.category ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	static bodiesAreMotionless(...bodies) {
+		for(let i = 0; i < bodies.length; i++) {
+			const body = bodies[i];
+
+			if(body.velocity.x || body.velocity.y) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	resolvePartition(bodies) {
 		if(bodies.length == 1) {
 			const [body] = bodies;
@@ -98,13 +124,6 @@ module.exports = class Collider {
 		} else {
 			for(let a = 0; a < bodies.length; a++) {
 				const bodyA = bodies[a];
-				/*
-				const newBodyAPosition = {
-					x: bodyA.position.x + bodyA.velocity.x,
-					y: bodyA.position.y + bodyA.velocity.y
-				};
-				const newBodyABounds = new Bounds(bodyA.width, bodyA.height, newBodyAPosition);
-				*/
 				const newBodyAPositionX = {
 					x: bodyA.position.x + bodyA.velocity.x,
 					y: bodyA.position.y
@@ -121,15 +140,15 @@ module.exports = class Collider {
 					bodyLoopB:
 					for(let b = a + 1; b < bodies.length; b++) {
 						const bodyB = bodies[b];
+
+						if(!this.constructor.bodiesCanInteract(bodyA, bodyB) || this.constructor.bodiesAreMotionless(bodyA, bodyB)) {
+							continue bodyLoopB;
+						}
+
 						const newBodyBPosition = {
 							x: bodyB.position.x + bodyB.velocity.x,
 							y: bodyB.position.y + bodyB.velocity.y
 						};
-
-						if(!bodyA.velocity.x && !bodyA.velocity.y && !bodyB.velocity.x && !bodyB.velocity.y) {
-							continue bodyLoopB;
-						}
-
 						const newBodyBBounds = new Bounds(bodyB.width, bodyB.height, newBodyBPosition);
 
 						if(newBodyABoundsX.intersect(newBodyBBounds) || newBodyABoundsY.intersect(newBodyBBounds)) {
@@ -141,7 +160,7 @@ module.exports = class Collider {
 							};
 							const newBodyBPositionY = {
 								x: bodyB.position.x,
-								y: bodyB.position.y + bodyB.velocity.y,
+								y: bodyB.position.y + bodyB.velocity.y
 							};
 							const newBodyBBoundsX = new Bounds(bodyB.width, bodyB.height, newBodyBPositionX);
 							const newBodyBBoundsY = new Bounds(bodyB.width, bodyB.height, newBodyBPositionY);

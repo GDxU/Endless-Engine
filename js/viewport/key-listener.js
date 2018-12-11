@@ -16,7 +16,7 @@ module.exports = class KeyListener {
 		this.viewport					= viewport;
 		this.enabled					= true;
 
-		BODY_LISTS.forEach((listName) => {
+		BODY_LISTS.forEach(listName => {
 			this[listName] = new List();
 		});
 

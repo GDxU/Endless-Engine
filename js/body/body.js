@@ -28,6 +28,7 @@ module.exports = class Body {
 		//this.sprite = args.sprite ? new Sprite(args.sprite, this) : false;
 		//this.text = args.text ? new Text() : false;
 		this.refreshSpriteFrame = false;
+		this.bitmask = args.bitmask;
 	}
 
 	disableInput(eventName) {
@@ -42,7 +43,7 @@ module.exports = class Body {
 		// might need sensors be able to toggle key input events
 
 	addMouseInput(eventName, {callback = () => {}, key = false, scroll = false}) {
-		this.world.viewports.eachItem((viewport) => {
+		this.world.viewports.eachItem(viewport => {
 			if(viewport.mouseListener) {
 				viewport.mouseListener.addBody(this, eventName);
 			}
@@ -52,7 +53,7 @@ module.exports = class Body {
 	}
 
 	addKeyInput(eventName, {callback = () => {}, key = false}) {
-		this.world.viewports.eachItem((viewport) => {
+		this.world.viewports.eachItem(viewport => {
 			if(viewport.keyListener) {
 				viewport.keyListener.addBody(this, eventName);
 			}

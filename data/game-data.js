@@ -2,6 +2,7 @@ const fonts = require('./fonts');
 const images = require('./images');
 const sheets = require('./sheets');
 const sprites = require('./sprites');
+const viewports = require('./viewports');
 
 const data = {
 	fonts,
@@ -16,7 +17,8 @@ const data = {
 	},
 	sheets,
 	sprites,
-	textures: {}
+	textures: {},
+	viewports
 };
 
 module.exports = {

@@ -3,7 +3,8 @@ const state = {
 	pixelRatio: 1,
 	lastBodyID: 0,
 	lastWorldID: 0,
-	lastViewportID: 0
+	lastViewportID: 0,
+	tickCounter: 0
 };
 
 module.exports = {

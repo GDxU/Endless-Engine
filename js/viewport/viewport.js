@@ -27,6 +27,7 @@ module.exports = class Viewport {
 		this.view.bounds = new Bounds(this.width, this.height, this.view.position);
 		this.keyListener = key ? new KeyListener(this) : false;
 		this.mouseListener = mouse ? new MouseListener(this) : false;
+		this.enabled = true;
 	}
 
 	updateView({x, y}) {

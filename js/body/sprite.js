@@ -1,5 +1,6 @@
 const BodyImage = require('./body-image');
 const {getGameData} = require('../../data/game-data');
+const {getGameState} = require('../state');
 const {SPRITE} = require('../constants');
 const {FACINGS, MODE_FALLBACKS} = SPRITE; // MODES
 
@@ -14,6 +15,7 @@ module.exports = class Sprite extends BodyImage {
 		this.loopDelayCounter = 0;
 		this.frameIndex = -1;
 		this.texture = '';
+		this.lastUpdated = -1;
 	}
 
 	get mode() {
@@ -34,10 +36,9 @@ module.exports = class Sprite extends BodyImage {
 		if(this.data.tiled) {
 			this.constructor.tile(img, this.body, context, vportPosition, vportSize, vportViewBounds);
 		} else {
-			const [bodyBoundA] = this.body.bounds.aabb;
 			const spriteBoundA = {
-				x: Math.round(this.body.width / 2 - img.w / 2),
-				y: Math.round(this.body.height / 2 - img.h / 2)
+				x: Math.round((this.body.width / 2) - (img.w / 2)),
+				y: Math.round((this.body.height / 2) - (img.h / 2))
 			};
 			const calcPosition = {
 				x: Math.round(this.body.position.x) + vportPosition.x,
@@ -74,10 +75,19 @@ module.exports = class Sprite extends BodyImage {
 	}
 
 	tick() {
-		const refresh = this.body.refreshSpriteFrame;
-		let usableMode		= false;
-		let usableFacing	= false;
-		let spriteMode		= this.mode || 'normal';
+		const masterCounter = getGameState('tickCounter');
+
+		if( this.lastUpdated == masterCounter ) {
+			return;
+		}
+
+		let refresh = this.body.refreshSpriteFrame;
+		let counterRollover = false;
+		let usableMode = false;
+		let usableFacing = false;
+		let spriteMode = this.mode || 'normal';
+
+		this.lastUpdated = masterCounter;
 
 		if( !this.data.frameData[spriteMode] ) {
 			const attemptedModes	= spriteMode.split('-');
@@ -111,9 +121,16 @@ module.exports = class Sprite extends BodyImage {
 			}
 		}
 
-		if( ++this.tickCounter >= this.data.ticksPerFrame || refresh ) {
+		if(this.data.sync) {
+			if(masterCounter % this.data.ticksPerFrame == 0) {
+				counterRollover = true;
+			}
+		} else if(++this.tickCounter >= this.data.ticksPerFrame) {
 			this.tickCounter = 0;
+			counterRollover = true;
+		}
 
+		if(counterRollover || refresh) {
 			const currentSet = this.data.frameData[usableMode][usableFacing];
 
 			if( !currentSet ) {

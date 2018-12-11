@@ -13,6 +13,7 @@ const {decodeImages} = require('./image/converter');
 
 const {PATHS} = require('./constants');
 const {getGameData} = require(`${PATHS.DATA_DIR}/game-data`);
+const {incrementGameState, updateGameState} = require('./state');
 
 const TICK_ROLLOVER = 10000;
 
@@ -23,7 +24,6 @@ module.exports = class Engine {
 		this.renderer = new Renderer();
 		this.viewports = new List();
 		this.worlds = new List();
-		this.tickCounter = 0;
 		this.killSwitch = false;
 
 		const onComplete = () => {
@@ -50,7 +50,8 @@ module.exports = class Engine {
 					'1$': () => 'X',
 					'2$': () => 'Y'
 				}
-			}
+			},
+			bitmask: 'character'
 		});
 		const testBodyTwo = new Body({
 			x: 197,
@@ -59,19 +60,21 @@ module.exports = class Engine {
 			width: 30,
 			velocity: {x: -0.35, y: -0.25},
 			sprite: 'test-sprite-2',
-			layer: 'layer-2'
+			layer: 'layer-2',
+			bitmask: 'character'
 		});
 		const testBodyThree = new Body({
 			x: 0,
-			y: 0,
+			y: 100,
 			height: 36,
 			width: 80,
 			text: {
 				font: 'thintel',
 				color: 'white',
-				content: 'Lorem ipsum dolor.'
+				content: 'Lorem ipsum dolor phasellus bibendum mauris ut vivamus.'
 			},
-			layer: 'layer-2'
+			layer: 'layer-2',
+			bitmask: 'ui'
 		});
 		const testBodyFour = new Body({
 			x: 40,
@@ -84,44 +87,19 @@ module.exports = class Engine {
 				color: 'white',
 				content: 'Lorem ipsum dolor.'
 			},
-			layer: 'layer-2'
+			layer: 'layer-2',
+			bitmask: 'ui'
 		});
 		const testWorldOne = new World();
-		const testViewportOne = new Viewport({
-			x: 10,
-			y: 20,
-			width: 100,
-			height: 100,
-			view: {
-				x: 0,
-				y: 30
-			},
-			world: testWorldOne
-		});
-		const testViewportTwo = new Viewport({
-			x: 250,
-			y: 70,
-			width: 170,
-			height: 170,
-			view: {
-				x: 40,
-				y: 10
-			},
-			world: testWorldOne,
-			listeners: {
-				key: false,
-				mouse: true
-			}
-		});
 
 		// addWorld()
 		// world.addBody()
 		this.worlds.addItem(testWorldOne);
 
-		testWorldOne.addBodies(testBodyOne, testBodyTwo, testBodyFour);
+		testWorldOne.addBodies(testBodyOne, testBodyTwo, testBodyThree, testBodyFour);
 
-		this.viewports.addItem(testViewportOne);
-		this.viewports.addItem(testViewportTwo);
+		this.addViewport('test-viewport-1', testWorldOne);
+		this.addViewport('test-viewport-2', testWorldOne);
 
 
 		testBodyTwo.addMouseInput('mousemove', {callback(self, e) {
@@ -133,13 +111,19 @@ module.exports = class Engine {
 		testBodyTwo.addMouseInput('mousedown', {callback() {
 			console.log('clicked body');
 		}, key: 'left'});
+		testBodyThree.addKeyInput('keydown', {callback(self, key) {
+			//console.log('pressed e', self, key);
+		}, key: 'e'});
 
 		//testViewportTwo.listener.disable();
 	}
 
 	addViewport(name, world) {
-		// get viewport Data
-		// add into viewports list
+		const data = getGameData('viewports', name);
+
+		data.world = world;
+
+		this.viewports.addItem(new Viewport(data));
 	}
 
 	removeViewport(name) {
@@ -172,7 +156,7 @@ module.exports = class Engine {
 	}
 
 	resolvePositions() {
-		this.worlds.getItems().forEach((world) => this.collider.resolve(world));
+		this.worlds.getItems().forEach(world => this.collider.resolve(world));
 	}
 
 	tick() {
@@ -182,8 +166,14 @@ module.exports = class Engine {
 		// this.tickBodies(); // tick sprites
 		this.renderViewports();
 
+		/*
 		if( ++this.tickCounter >= TICK_ROLLOVER ) {
 			this.tickCounter = 0;
+		}
+		*/
+
+		if(incrementGameState('tickCounter') >= TICK_ROLLOVER) {
+			updateGameState('tickCounter', 0);
 		}
 
 		if(!this.killSwitch) {
