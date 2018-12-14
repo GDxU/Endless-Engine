@@ -63,6 +63,14 @@ module.exports = class Collider {
 		body.position.x += body.velocity.x;
 		body.position.y += body.velocity.y;
 		body.bounds.update({width: body.width, height: body.height, x: Math.round(body.position.x), y: Math.round(body.position.y)});
+
+		if(body.tethers) {
+			body.tethers.eachItem(({tethered, relative}) => {
+				tethered.position.x = body.position.x + relative.x;
+				tethered.position.y = body.position.y + relative.y;
+				tethered.bounds.update({width: tethered.width, height: tethered.height, x: Math.round(tethered.position.x), y: Math.round(tethered.position.y)});
+			});
+		}
 	}
 
 	resolveBlockedXBody(body, blocker) {

@@ -1,4 +1,4 @@
-const List = require('../util/list');
+const List = require('../data-structures/list');
 const {getGameState} = require('../state');
 const {getGameData} = require('../../data/game-data');
 

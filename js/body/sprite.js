@@ -81,7 +81,7 @@ module.exports = class Sprite extends BodyImage {
 			return;
 		}
 
-		let refresh = this.body.refreshSpriteFrame;
+		const refresh = this.body.refreshSpriteFrame;
 		let counterRollover = false;
 		let usableMode = false;
 		let usableFacing = false;

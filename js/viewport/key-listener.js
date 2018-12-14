@@ -1,4 +1,4 @@
-const List = require('../util/list');
+const List = require('../data-structures/list');
 
 const {LISTENER} = require('../constants');
 const {

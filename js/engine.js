@@ -4,7 +4,7 @@ const Body = require('./body/body');
 const Canvas = require('./canvas');
 const Collider = require('./collider');
 //const EventEmitter = require('./event-emitter');
-const List = require('./util/list');
+const List = require('./data-structures/list');
 const Renderer = require('./renderer');
 const Viewport = require('./viewport/viewport');
 const World = require('./world');
@@ -53,6 +53,14 @@ module.exports = class Engine {
 			},
 			bitmask: 'character'
 		});
+		const tetheredBodyOne = new Body({
+			x: 50,
+			y: 50,
+			height: 10,
+			width: 10,
+			layer: 'layer-1',
+			bitmask: 'ui'
+		});
 		const testBodyTwo = new Body({
 			x: 197,
 			y: 90,
@@ -96,8 +104,8 @@ module.exports = class Engine {
 		// world.addBody()
 		this.worlds.addItem(testWorldOne);
 
-		testWorldOne.addBodies(testBodyOne, testBodyTwo, testBodyThree, testBodyFour);
-
+		testWorldOne.addBodies(testBodyOne, testBodyTwo, testBodyThree, testBodyFour, tetheredBodyOne);
+		testBodyOne.tether(tetheredBodyOne, {x: 40, y: 5});
 		this.addViewport('test-viewport-1', testWorldOne);
 		this.addViewport('test-viewport-2', testWorldOne);
 
