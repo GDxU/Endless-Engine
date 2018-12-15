@@ -18,6 +18,7 @@ const data = {
 	sheets,
 	sprites,
 	textures: {},
+	tilesetFilters: {},
 	viewports
 };
 
