@@ -123,13 +123,12 @@ module.exports = class Listener {
 		// Convert browser coordinates into viewport coordinates
 		point.x -= getGameState('canvasPosition', 'x');
 		point.y -= getGameState('canvasPosition', 'y');
+		point.x /= getGameState('pixelRatio');
+		point.y /= getGameState('pixelRatio');
 		point.x -= this.viewport.position.x;
 		point.y -= this.viewport.position.y;
 		point.x += this.viewport.view.position.x;
 		point.y += this.viewport.view.position.y;
-
-		point.x /= getGameState('pixelRatio');
-		point.y /= getGameState('pixelRatio');
 
 		this.cursorVportPosition = point;
 	}
@@ -175,9 +174,11 @@ module.exports = class Listener {
 
 				if( zIndex > highestIndex ) {
 					if( body.bounds.encompass(point) ) {
-						highestIndex		= zIndex;
-						highestCallback	= callback;
-						highestBody			= body;
+						if( !body.chamfer || !body.bounds.chamferedRegion(point, body.chamfer) ) {
+							highestIndex		= zIndex;
+							highestCallback	= callback;
+							highestBody			= body;
+						}
 					}
 				}
 			}

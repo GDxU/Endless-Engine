@@ -45,6 +45,9 @@ module.exports = class BodyImage {
 	}
 
 	static tile(img = {w: 0, h: 0, name: '', x: 0, y: 0}, body, context, vportPosition, vportSize, vportViewBounds) {
+		if(!img.name) {
+			return;
+		}
 		const image = BodyImage.getTexture(img.name);
 		const [boundA, boundB] = body.bounds.aabb;
 

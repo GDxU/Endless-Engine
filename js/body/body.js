@@ -14,6 +14,7 @@ module.exports = class Body {
 			x: args.x || 0,
 			y: args.y || 0
 		};
+		this.chamfer = args.chamfer || 0;
 		this.velocity = args.velocity || {x: 0, y: 0};
 
 		// static/sleeping?

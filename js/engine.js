@@ -10,6 +10,7 @@ const Viewport = require('./viewport/viewport');
 const World = require('./world');
 const {decodeImages} = require('./image/converter');
 //const loadImages = require('./image/loader');
+const SquareHexGrid = require('./data-structures/hex-grid');
 
 const {PATHS} = require('./constants');
 const {getGameData} = require(`${PATHS.DATA_DIR}/game-data`);
@@ -39,7 +40,7 @@ module.exports = class Engine {
 			y: 26,
 			height: 26,
 			width: 26,
-			velocity: {x: 0.5, y: 0},
+			velocity: {x: 0.4, y: 0},
 			sprite: 'test-sprite-1',
 			layer: 'layer-1',
 			text: {
@@ -109,9 +110,40 @@ module.exports = class Engine {
 		this.addViewport('test-viewport-1', testWorldOne);
 		this.addViewport('test-viewport-2', testWorldOne);
 
+		const test = new SquareHexGrid(10, 10);
+		// Temp Hex Cell Body
+		const testHexCellBodyData = {
+			height: 11,
+			width: 21,
+			chamfer: 5,
+			velocity: {x: 0, y: 0},
+			sprite: 'test-orange-hex',
+			layer: 'layer-1',
+			bitmask: 'ui'
+		};
+		test.eachCell((cell, x, y) => {
+			const data = {
+				...testHexCellBodyData,
+				x: x * testHexCellBodyData.width,
+				y: y * testHexCellBodyData.height
+			};
+			data.y -= (cell.offset ? (testHexCellBodyData.height / 2) : 0);
+			data.y -= y;
+			data.x -= x * 6;
+			const body = new Body(data);
+			testWorldOne.addBodies(body);
+			body.addMouseInput('mousemove', {callback(self, e) {
+				//console.log('mouse moving', self, e);
+				console.log(self.id);
+			}});
+		});
 
-		testBodyTwo.addMouseInput('mousemove', {callback(self, e) {
-			//console.log('mouse moving', self, e);
+
+		testBodyOne.addMouseInput('mousemove', {callback(self, e) {
+			console.log('mouse moving 1');
+		}});
+		testBodyThree.addMouseInput('mousemove', {callback(self, e) {
+			console.log('mouse moving 3');
 		}});
 		testBodyTwo.addKeyInput('keydown', {callback(self, key) {
 			//console.log('pressed e', self, key);

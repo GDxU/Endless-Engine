@@ -31,6 +31,41 @@ module.exports = class Bounds {
 		return false;
 	}
 
+	chamferedRegion(point, chamfer) {
+		const [a, b] = this.aabb;
+		const intrusion1 = {
+			x: point.x - a.x,
+			y: point.y - a.y
+		};
+		const intrusion2 = {
+			x: b.x - point.x,
+			y: point.y - a.y
+		};
+		const intrusion3 = {
+			x: b.x - point.x,
+			y: b.y - point.y
+		};
+		const intrusion4 = {
+			x: point.x - a.x,
+			y: b.y - point.y
+		};
+
+		if( intrusion1.x + intrusion1.y < chamfer ) {
+			return true;
+		}
+		if( intrusion2.x + intrusion2.y < chamfer ) {
+			return true;
+		}
+		if( intrusion3.x + intrusion3.y < chamfer ) {
+			return true;
+		}
+		if( intrusion4.x + intrusion4.y < chamfer ) {
+			return true;
+		}
+
+		return false;
+	}
+
 	intersect(otherBounds) {
 		const [aOne, bOne] = this.aabb;
 		const [aTwo, bTwo] = otherBounds.aabb;

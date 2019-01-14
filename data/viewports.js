@@ -5,8 +5,8 @@ module.exports = {
 		width: 100,
 		height: 100,
 		view: {
-			x: 0,
-			y: 30
+			x: 30,
+			y: 0
 		}
 	},
 	'test-viewport-2': {

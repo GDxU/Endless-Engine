@@ -65,7 +65,7 @@ const List = function(maxItems = false) {
 
 		// Use custom item handle if provided
 		if( handle ) {
-			generatedHandle = handle;
+			generatedHandle = String(handle);
 		}
 
 		_items[generatedHandle] = item;

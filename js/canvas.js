@@ -33,6 +33,7 @@ module.exports = class Canvas {
 		this.elem.height		= vportHeight;
 
 		updateGameState('canvasPosition', {x: canvasFromLeft, y: canvasFromTop});
+		updateGameState('pixelRatio', this.pixelRatio);
 	}
 
 	createCanvas() {
