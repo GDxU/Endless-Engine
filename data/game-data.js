@@ -4,6 +4,14 @@ const sheets = require('./sheets');
 const sprites = require('./sprites');
 const viewports = require('./viewports');
 
+const assignElevationLayers = (dataObj) => {
+	const baseLayer = 1000;
+
+	for(let i = -10; i < 11; i++) {
+		dataObj[`elev:${i}`] = 1000 + i;
+	}
+};
+
 const data = {
 	fonts,
 	images,
@@ -13,7 +21,8 @@ const data = {
 		//'layer-2-backfacing': 19,
 		'layer-2': 20,
 		//'layer-3-backfacing': 29,
-		'layer-3': 30
+		'layer-3': 30,
+		'layer-sub-1': 8
 	},
 	sheets,
 	sprites,
@@ -21,6 +30,8 @@ const data = {
 	tilesetFilters: {},
 	viewports
 };
+
+assignElevationLayers(data.layers);
 
 module.exports = {
 	getGameData(...sections) {

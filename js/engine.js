@@ -15,6 +15,7 @@ const SquareHexGrid = require('./data-structures/hex-grid');
 const {PATHS} = require('./constants');
 const {getGameData} = require(`${PATHS.DATA_DIR}/game-data`);
 const {incrementGameState, updateGameState} = require('./state');
+const {randomFromTo} = require('./util/tools');
 
 const TICK_ROLLOVER = 10000;
 
@@ -113,23 +114,57 @@ module.exports = class Engine {
 		const test = new SquareHexGrid(10, 10);
 		// Temp Hex Cell Body
 		const testHexCellBodyData = {
-			height: 11,
+			height: 12,
 			width: 21,
 			chamfer: 5,
 			velocity: {x: 0, y: 0},
 			sprite: 'test-orange-hex',
-			layer: 'layer-1',
+			layer: 'elev:0',
+			bitmask: 'ui'
+		};
+		const textHexDepthBodyData = {
+			height: 7,
+			width: 21,
+			velocity: {x: 0, y: 0},
+			sprite: 'test-orange-hex-depth',
+			layer: 'elev:0',
 			bitmask: 'ui'
 		};
 		test.eachCell((cell, x, y) => {
 			const data = {
 				...testHexCellBodyData,
-				x: x * testHexCellBodyData.width,
+				x: x * testHexCellBodyData.width + x + 110,
 				y: y * testHexCellBodyData.height
 			};
 			data.y -= (cell.offset ? (testHexCellBodyData.height / 2) : 0);
-			data.y -= y;
+			//data.y -= y;
 			data.x -= x * 6;
+			const elevation = Math.floor(randomFromTo(0, 6));
+			//const elevation = 0;
+
+			data.y += -elevation * 2;
+			data.layer = `elev:${elevation}`;
+
+			for(let d = 0; d <= elevation; d++) {
+				//const layerElev = elevation - d - 1;
+				const depthData = {
+					...textHexDepthBodyData,
+					x: x * testHexCellBodyData.width + x + 110 - (x * 6),
+					y: y * testHexCellBodyData.height + 7,
+					layer: `elev:${d - 1}`
+				};
+				depthData.y -= (cell.offset ? (testHexCellBodyData.height / 2) : 0);
+				depthData.y -= d * 2;
+
+				const depthBody = new Body(depthData);
+				testWorldOne.addBodies(depthBody);
+			}
+			/*
+			if(x == 0 && y == 8) {
+				data.y += 2;
+				data.layer = 'elev:-1';
+			}
+			*/
 			const body = new Body(data);
 			testWorldOne.addBodies(body);
 			body.addMouseInput('mousemove', {callback(self, e) {

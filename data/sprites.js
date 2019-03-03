@@ -42,5 +42,19 @@ module.exports = {
 				}
 			}
 		}
+	},
+	'test-orange-hex-depth': 	{
+		ticksPerFrame: 10,
+		loop: false,
+		tiled: false,
+		padding: 0,
+		layer: 'layer-2',
+		frameData: {
+			'normal': {
+				'e': {
+					frames: ['test-orange-hex-depth']
+				}
+			}
+		}
 	}
 };

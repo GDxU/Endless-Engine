@@ -7,13 +7,14 @@ module.exports = class Display {
 		this.border = args.border ? new Border(args.border, body) : false;
 		this.sprite = args.sprite ? new Sprite(args.sprite, body) : false;
 		this.text = args.text ? new Text(args.text, body) : false;
+		//this.layer = args.layer ? getGameData('layers')[args.layer] : 0;
 		this.layer = args.layer || '';
 		this.body = body;
 	}
 
 	render(context, vportPosition, vportSize, vportViewBounds) {
 		// Temporary
-		if(!this.border && !this.sprite && !this.text || true) {
+		if(!this.border && !this.sprite && !this.text || false) {
 			const calcPosition = {
 				x: Math.round(this.body.position.x) + vportPosition.x,
 				y: Math.round(this.body.position.y) + vportPosition.y

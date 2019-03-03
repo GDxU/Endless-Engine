@@ -1,3 +1,5 @@
+const {getGameData} = require('../data/game-data');
+
 module.exports = class Renderer {
 	static clearCanvas(elem, ctx) {
 		ctx.globalCompositeOperation = 'source-in';
@@ -11,6 +13,20 @@ module.exports = class Renderer {
 		////
 	}
 
+	static sortRenderables(bodyA, bodyB) {
+		const layers = getGameData('layers');
+		const layerA = bodyA.body.display ? layers[bodyA.body.display.layer] : 0;
+		const layerB = bodyB.body.display ? layers[bodyB.body.display.layer] : 0;
+
+		if(layerA > layerB) {
+			return 1;
+		} else if(layerA < layerB) {
+			return -1;
+		} else {
+			return 0;
+		}
+	}
+
 	static drawViewport(elem, ctx, viewport) {
 		if(!viewport.enabled) {
 			return;
@@ -20,6 +36,7 @@ module.exports = class Renderer {
 		ctx.fillRect(viewport.bounds.aabb[0].x, viewport.bounds.aabb[0].y, viewport.width, viewport.height);
 
 		const bodies = viewport.world.getBodies();
+		const renderable = [];
 
 		bodies.forEach((body) => {
 			if(body.visible) {
@@ -29,9 +46,16 @@ module.exports = class Renderer {
 						y: viewport.position.y - viewport.view.position.y
 					};
 
-					body.display.render(ctx, vportPosition, {width: viewport.width, height: viewport.height}, viewport.view.bounds);
+					renderable.push({
+						body,
+						vportPosition
+					});
 				}
 			}
+		});
+
+		renderable.sort(this.sortRenderables).forEach(({body, vportPosition}) => {
+			body.display.render(ctx, vportPosition, {width: viewport.width, height: viewport.height}, viewport.view.bounds);
 		});
 	}
 
