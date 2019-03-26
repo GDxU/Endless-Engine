@@ -10,7 +10,8 @@ const Viewport = require('./viewport/viewport');
 const World = require('./world');
 const {decodeImages} = require('./image/converter');
 //const loadImages = require('./image/loader');
-const SquareHexGrid = require('./data-structures/hex-grid');
+const HexGrid = require('./data-structures/hex-grid');
+const mapGenerator = require('./map-generator');
 
 const {PATHS} = require('./constants');
 const {getGameData} = require(`${PATHS.DATA_DIR}/game-data`);
@@ -33,7 +34,38 @@ module.exports = class Engine {
 			this.start();
 		};
 
+		//mapGenerator.generate(100, 50);
+
 		decodeImages(onComplete);
+
+		let highlightedElev = '-';
+
+		const uiBodyOneData = {
+			x: 10,
+			y: 10,
+			height: 45,
+			width: 110,
+			text: {
+				font: 'thintel',
+				color: 'white',
+				content: [
+					'Cell ID: 1$',
+					'Elevation: 2$',
+					'Terrain Type: 3$'
+				],
+				vars: {
+					'1$': () => 'X',
+					'2$': () => highlightedElev,
+					'3$': () => 'Z'
+				}
+			},
+			layer: 'layer-1',
+			bitmask: 'ui'
+		};
+		const uiWorld = new World();
+		this.worlds.addItem(uiWorld);
+		uiWorld.addBodies(new Body(uiBodyOneData));
+		this.addViewport('ui-test-viewport-1', uiWorld);
 
 		// TEMPORARY
 		const testBodyOne = new Body({
@@ -75,7 +107,7 @@ module.exports = class Engine {
 		});
 		const testBodyThree = new Body({
 			x: 0,
-			y: 100,
+			y: 104,
 			height: 36,
 			width: 80,
 			text: {
@@ -100,19 +132,27 @@ module.exports = class Engine {
 			layer: 'layer-2',
 			bitmask: 'ui'
 		});
+
 		const testWorldOne = new World();
+
 
 		// addWorld()
 		// world.addBody()
 		this.worlds.addItem(testWorldOne);
 
 		testWorldOne.addBodies(testBodyOne, testBodyTwo, testBodyThree, testBodyFour, tetheredBodyOne);
+		console.log(testBodyTwo);
 		testBodyOne.tether(tetheredBodyOne, {x: 40, y: 5});
 		this.addViewport('test-viewport-1', testWorldOne);
 		this.addViewport('test-viewport-2', testWorldOne);
 
-		const test = new SquareHexGrid(10, 10);
-		// Temp Hex Cell Body
+		const hexGridTest = new HexGrid(10, 10);
+		hexGridTest.populate(60).setMetaRelationships();
+		hexGridTest.eachPointRandom((point, x, y) => {
+			console.log(x, y);
+		});
+		console.log( hexGridTest.getMetaPoint(4, 4) );
+
 		const testHexCellBodyData = {
 			height: 12,
 			width: 21,
@@ -122,7 +162,7 @@ module.exports = class Engine {
 			layer: 'elev:0',
 			bitmask: 'ui'
 		};
-		const textHexDepthBodyData = {
+		const testHexDepthBodyData = {
 			height: 7,
 			width: 21,
 			velocity: {x: 0, y: 0},
@@ -130,49 +170,96 @@ module.exports = class Engine {
 			layer: 'elev:0',
 			bitmask: 'ui'
 		};
-		test.eachCell((cell, x, y) => {
+		const testHexCell44BodyData = {
+			height: 26,
+			width: 44,
+			chamfer: 12,
+			velocity: {x: 0, y: 0},
+			sprite: 'hex-cell-44-top',
+			layer: 'elev:0',
+			bitmask: 'ui'
+		};
+		const testHexDepth44BodyData = {
+			height: 14,
+			width: 44,
+			velocity: {x: 0, y: 0},
+			sprite: 'hex-cell-44-height',
+			layer: 'elev:0',
+			bitmask: 'ui'
+		};
+		const waterElev = 3;
+		const testHexWaterBodyData = {
+			height: 12,
+			width: 21,
+			velocity: {x: 0, y: 0},
+			sprite: 'test-orange-hex-water',
+			layer: `elev:${waterElev}`,
+			bitmask: 'ui'
+		};
+		const testHexWater44BodyData = {
+			height: 26,
+			width: 44,
+			velocity: {x: 0, y: 0},
+			sprite: 'hex-cell-44-water-top',
+			layer: `elev:${waterElev}`,
+			bitmask: 'ui'
+		};
+		const cellMousemoveCallback = (self, e) => {
+			//console.log("move", self);
+		};
+		const cellMousedownCallback = (self, e) => {
+			console.log("clicked cell", "elevation:", self.hexCell.elevation);
+			highlightedElev = self.hexCell.elevation.value;
+		};
+		hexGridTest.eachMetaPoint((cell, x, y) => {
+			//console.log(hexGridTest.getCell(x, y).terrain);
 			const data = {
-				...testHexCellBodyData,
-				x: x * testHexCellBodyData.width + x + 110,
-				y: y * testHexCellBodyData.height
+				...testHexCell44BodyData,
+				x: x * testHexCell44BodyData.width + x + 80,
+				y: y * testHexCell44BodyData.height + 40
 			};
-			data.y -= (cell.offset ? (testHexCellBodyData.height / 2) : 0);
-			//data.y -= y;
-			data.x -= x * 6;
-			const elevation = Math.floor(randomFromTo(0, 6));
-			//const elevation = 0;
+			data.y -= (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
+			data.x -= x * 13;
+			const elevation = Math.floor(randomFromTo(0, 9));
 
 			data.y += -elevation * 2;
 			data.layer = `elev:${elevation}`;
 
 			for(let d = 0; d <= elevation; d++) {
-				//const layerElev = elevation - d - 1;
 				const depthData = {
-					...textHexDepthBodyData,
-					x: x * testHexCellBodyData.width + x + 110 - (x * 6),
-					y: y * testHexCellBodyData.height + 7,
+					...testHexDepth44BodyData,
+					x: x * testHexCell44BodyData.width + x + 80 - (x * 13),
+					y: y * testHexCell44BodyData.height + testHexDepth44BodyData.height + 40,
 					layer: `elev:${d - 1}`
 				};
-				depthData.y -= (cell.offset ? (testHexCellBodyData.height / 2) : 0);
-				depthData.y -= d * 2;
+				depthData.y -= (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
+				depthData.y -= d * 2; // 2 is height/thickness of depth slice
 
 				const depthBody = new Body(depthData);
 				testWorldOne.addBodies(depthBody);
 			}
-			/*
-			if(x == 0 && y == 8) {
-				data.y += 2;
-				data.layer = 'elev:-1';
-			}
-			*/
-			const body = new Body(data);
-			testWorldOne.addBodies(body);
-			body.addMouseInput('mousemove', {callback(self, e) {
-				//console.log('mouse moving', self, e);
-				console.log(self.id);
-			}});
-		});
 
+			if(elevation < waterElev) {
+				const waterData = {
+					...testHexWater44BodyData,
+					x: x * testHexCell44BodyData.width + x + 80,
+					y: y * testHexCell44BodyData.height + 40
+				};
+				waterData.y -= (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
+				waterData.x -= x * 13;
+				waterData.y += -waterElev * 2;
+				const waterBody = new Body(waterData);
+				testWorldOne.addBodies(waterBody);
+			}
+
+			const body = new Body(data);
+
+			testWorldOne.addBodies(body);
+			//cell.data.elevation.value = elevation; // REMOVE THIS
+			//body.hexCell = cell;
+			body.addMouseInput('mousemove', {callback: cellMousemoveCallback});
+			body.addMouseInput('mousedown', {callback: cellMousedownCallback, key: 'left'});
+		});
 
 		testBodyOne.addMouseInput('mousemove', {callback(self, e) {
 			console.log('mouse moving 1');
@@ -185,7 +272,7 @@ module.exports = class Engine {
 		}, key: 'e'});
 		testBodyTwo.addMouseInput('mousedown', {callback() {
 			console.log('clicked body');
-		}, key: 'left'});
+		}});
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
 			//console.log('pressed e', self, key);
 		}, key: 'e'});

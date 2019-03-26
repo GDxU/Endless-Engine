@@ -4,10 +4,12 @@ const ipc		= electron.ipcRenderer;
 //const GAME_DATA = require('./data/game-data');
 const Engine = require('./js/engine');
 
-const engine = new Engine();
-const {encodeImages} = require('./js/image/converter');
-
-//encodeImages();
+if(process.env.ENCODE_IMAGES) {
+	const {encodeImages} = require('./js/image/converter');
+	encodeImages();
+} else {
+	const engine = new Engine();
+}
 
 log = function(data) {
 	ipc.send('display', data);

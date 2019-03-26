@@ -56,5 +56,61 @@ module.exports = {
 				}
 			}
 		}
+	},
+	'test-orange-hex-water': 	{
+		ticksPerFrame: 10,
+		loop: false,
+		tiled: false,
+		padding: 0,
+		layer: 'layer-2',
+		frameData: {
+			'normal': {
+				'e': {
+					frames: ['test-orange-hex-water']
+				}
+			}
+		}
+	},
+	'hex-cell-44-top': 	{
+		ticksPerFrame: 10,
+		loop: false,
+		tiled: false,
+		padding: 0,
+		layer: 'layer-2',
+		frameData: {
+			'normal': {
+				'e': {
+					frames: ['hex-cell-44-top']
+				}
+			}
+		}
+	},
+	'hex-cell-44-height': 	{
+		ticksPerFrame: 10,
+		loop: false,
+		tiled: false,
+		padding: 0,
+		layer: 'layer-2',
+		frameData: {
+			'normal': {
+				'e': {
+					frames: ['hex-cell-44-height']
+				}
+			}
+		}
+	},
+	'hex-cell-44-water-top': 	{
+		ticksPerFrame: 10,
+		loop: false,
+		tiled: false,
+		padding: 0,
+		layer: 'layer-2',
+		frameData: {
+			'normal': {
+				'e': {
+					frames: ['hex-cell-44-water-top']
+				}
+			}
+		}
 	}
 };

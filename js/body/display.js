@@ -14,7 +14,7 @@ module.exports = class Display {
 
 	render(context, vportPosition, vportSize, vportViewBounds) {
 		// Temporary
-		if(!this.border && !this.sprite && !this.text || false) {
+		if(!this.border && !this.sprite && !this.text || false || (this.text && !this.sprite)) {
 			const calcPosition = {
 				x: Math.round(this.body.position.x) + vportPosition.x,
 				y: Math.round(this.body.position.y) + vportPosition.y

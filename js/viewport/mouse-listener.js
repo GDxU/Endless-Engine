@@ -164,6 +164,10 @@ module.exports = class Listener {
 		let highestCallback = null;
 		let highestBody = null;
 
+		if( !this.viewport.view.bounds.encompass(point) ) {
+			return;
+		}
+
 		bodyList.eachItem((body) => {
 			const {callback} = body.hasMouseInput(eventName, this.mouseButton, scroll);
 
@@ -173,6 +177,7 @@ module.exports = class Listener {
 				const zIndex = getGameData('layers', body.display.layer);
 
 				if( zIndex > highestIndex ) {
+					//console.log(body.bounds, point)
 					if( body.bounds.encompass(point) ) {
 						if( !body.chamfer || !body.bounds.chamferedRegion(point, body.chamfer) ) {
 							highestIndex		= zIndex;

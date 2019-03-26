@@ -7,10 +7,6 @@ class Grid {
 		this.points = [];
 		this.meta = [];
 		this.data = [];
-		this.hasMeta = true;
-		this.hasScratch = true;
-		this.hasData = true;
-		this.wrap = false;
 		this.pointFilter = false;
 		this.wrap = Boolean( config.wrap );
 		this.hasMeta = !( config.meta === false );
