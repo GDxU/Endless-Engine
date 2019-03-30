@@ -1,3 +1,7 @@
+const HexCompass = require('./hex-compass');
+
+const NEIGHBORS_DIRS = ['n', 'ne', 'se', 's', 'sw', 'nw'];
+
 const getGameDataCell = () => {
 	return {
 		elevation: {
@@ -26,8 +30,48 @@ const getGameDataCell = () => {
 	};
 };
 
+class GameDataCell {
+	constructor() {
+		this.data = {
+			elevation: {
+				bodies: [],
+				value: 0
+			},
+			//events?
+			//city
+			//structure may need to be array
+			structure: {
+				body: false,
+				value: ""
+			},
+			terrain: {
+				//adjacent terrain values
+				body: false,
+				value: ""
+			},
+			unit: {
+				// reference army group?
+				//body: false
+			},
+			water: {
+				body: false,
+				value: ""// litoral coast, sea, river, ocean
+			},
+			weather: {
+				body: false,
+				value: ""
+			}
+		};
+	}
+}
+
 class HexGrid {
 	constructor(width, height, config = {}) {
+		const compass = new HexCompass();
+		//console.log('direction', compass.rotate(1).dir );
+		console.log('random direction', compass.randomize().dir );
+		console.log('adjacents', compass.adjacent );
+		console.log('opposite', compass.opposite );
 		this.width = width;
 		this.height = height;
 		this.scratch = [];
@@ -50,7 +94,7 @@ class HexGrid {
 			for(let x = 0; x < this.width; x++) {
 				pointRow.push(0);
 				scratchRow.push(0);
-				dataRow.push(0);
+				dataRow.push( getGameDataCell() );
 				metaRow.push( this.constructor.createBlankMeta(x, y) );
 			}
 
@@ -67,6 +111,7 @@ class HexGrid {
 			}
 		}
 
+		/*
 		this.eachPoint((point, x, y) => {
 			const xMod = x % 2;
 			const even = (xMod == 0);
@@ -79,13 +124,15 @@ class HexGrid {
 			// s
 			if( y < this.height - 1 ) {
 				this.setMetaPoint(x, y, {
-					s: this.getMetaPoint(x, y + 1)
+					//s: this.getMetaPoint(x, y + 1)
+					s: {x, y: y + 1}
 				});
 			}
 			// n
 			if( y > 0 ) {
 				this.setMetaPoint(x, y, {
-					n: this.getMetaPoint(x, y - 1)
+					//n: this.getMetaPoint(x, y - 1)
+					n: {x, y: y - 1}
 				});
 			}
 			if( x > 0 ) {
@@ -93,11 +140,13 @@ class HexGrid {
 				if( y > 0 || even ) {
 					if( even ) {
 						this.setMetaPoint(x, y, {
-							nw: this.getMetaPoint(x - 1, y)
+							//nw: this.getMetaPoint(x - 1, y)
+							nw: {x: x - 1, y}
 						});
 					} else {
 						this.setMetaPoint(x, y, {
-							nw: this.getMetaPoint(x - 1, y - 1)
+							//nw: this.getMetaPoint(x - 1, y - 1)
+							nw: {x: x - 1, y: y - 1}
 						});
 					}
 				}
@@ -105,11 +154,13 @@ class HexGrid {
 				if( y < this.height - 1 || odd ) {
 					if( odd ) {
 						this.setMetaPoint(x, y, {
-							sw: this.getMetaPoint(x - 1, y)
+							//sw: this.getMetaPoint(x - 1, y)
+							sw: {x: x - 1, y}
 						});
 					} else {
 						this.setMetaPoint(x, y, {
-							sw: this.getMetaPoint(x - 1, y + 1)
+							//sw: this.getMetaPoint(x - 1, y + 1)
+							sw: {x: x - 1, y: y + 1}
 						});
 					}
 				}
@@ -119,11 +170,13 @@ class HexGrid {
 				if( y > 0 || even ) {
 					if( even ) {
 						this.setMetaPoint(x, y, {
-							ne: this.getMetaPoint(x + 1, y)
+							//ne: this.getMetaPoint(x + 1, y)
+							ne: {x: x + 1, y}
 						});
 					} else {
 						this.setMetaPoint(x, y, {
-							ne: this.getMetaPoint(x + 1, y - 1)
+							//ne: this.getMetaPoint(x + 1, y - 1)
+							ne: {x: x + 1, y: y - 1}
 						});
 					}
 				}
@@ -131,13 +184,98 @@ class HexGrid {
 				if( y < this.height - 1 || odd ) {
 					if( odd ) {
 						this.setMetaPoint(x, y, {
-							se: this.getMetaPoint(x + 1, y)
+							//se: this.getMetaPoint(x + 1, y)
+							se: {x: x + 1, y}
 						});
 					} else {
 						this.setMetaPoint(x, y, {
-							se: this.getMetaPoint(x + 1, y + 1)
+							//se: this.getMetaPoint(x + 1, y + 1)
+							se: {x: x + 1, y: y + 1}
 						});
 					}
+				}
+			}
+		});
+		*/
+
+		this.eachPoint((point, x, y) => {
+			const xMod = x % 2;
+			const even = (xMod == 0);
+			const odd = (xMod == 1);
+
+			if(even) {
+				this.setMetaPoint(x, y, {offset: true});
+			}
+
+			// s
+			if( y < this.height - 1 ) {
+				this.setMetaPoint(x, y, {
+					s: {x, y: y + 1}
+				});
+			}
+
+			// n
+			if( y > 0 ) {
+				this.setMetaPoint(x, y, {
+					n: {x, y: y - 1}
+				});
+			}
+
+			// nw
+			if( y > 0 || even ) {
+				if( even ) {
+					this.setMetaPoint(x, y, {
+						//nw: {x: x - 1, y}
+						nw: this.normalize(x - 1, y)
+					});
+				} else {
+					this.setMetaPoint(x, y, {
+						//nw: {x: x - 1, y: y - 1}
+						nw: this.normalize(x - 1, y - 1)
+					});
+				}
+			}
+			// sw
+			if( y < this.height - 1 || odd ) {
+				if( odd ) {
+					this.setMetaPoint(x, y, {
+						//sw: {x: x - 1, y}
+						sw: this.normalize(x - 1, y)
+					});
+				} else {
+					this.setMetaPoint(x, y, {
+						//sw: {x: x - 1, y: y + 1}
+						sw: this.normalize(x - 1, y + 1)
+					});
+				}
+			}
+
+			// ne
+			if( y > 0 || even ) {
+				if( even ) {
+					this.setMetaPoint(x, y, {
+						//ne: {x: x + 1, y}
+						ne: this.normalize(x + 1, y)
+					});
+				} else {
+					this.setMetaPoint(x, y, {
+						//ne: {x: x + 1, y: y - 1}
+						ne: this.normalize(x + 1, y - 1)
+					});
+				}
+			}
+			// se
+			if( y < this.height - 1 || odd ) {
+				if( odd ) {
+					this.setMetaPoint(x, y, {
+						//se: {x: x + 1, y}
+						se: this.normalize(x + 1, y)
+					});
+				} else {
+					this.setMetaPoint(x, y, {
+						//se: {x: x + 1, y: y + 1}
+						se: this.normalize(x + 1, y + 1)
+					});
 				}
 			}
 		});
@@ -148,14 +286,12 @@ class HexGrid {
 			edge: false,
 			inside: false,
 			//hex: 0,
-			neighbors: {
-				n: false,
-				ne: false,
-				se: false,
-				s: false,
-				sw: false,
-				nw: false
-			},
+			n: false,
+			ne: false,
+			se: false,
+			s: false,
+			sw: false,
+			nw: false,
 			numNeighbors: 0,
 			offset: false,
 			//rotations: 0,
@@ -395,7 +531,6 @@ class HexGrid {
 			outOfBounds = true;
 		}
 		while( y >= this.height ) {
-			//return false;
 			y -= this.height;
 			outOfBounds = true;
 		}
@@ -589,33 +724,66 @@ class HexGrid {
 	}
 
 	setMetaRelationships() {
-		const nghbrDirs = ['n', 'ne', 'se', 's', 'sw', 'nw'];
-
 		this.eachPoint((point, x, y) => {
 			let count = 0;
+			const metaPoint = this.getMetaPoint(x, y);
 
-			if(point) {
-				const metaPoint = this.getMetaPoint(x, y);
+			NEIGHBORS_DIRS.forEach(dir => {
+				const nghbrCoords = metaPoint[dir];
 
-				nghbrDirs.forEach(dir => {
-					const nghbrMeta = metaPoint[dir];
+				if(nghbrCoords) {
+					const nghbrPoint = this.getPoint(nghbrCoords.x, nghbrCoords.y);
 
-					if( nghbrMeta && this.getPoint(nghbrMeta.x, nghbrMeta.y) ) {
+					if( nghbrPoint ) {
 						count++;
 					}
-				});
-			}
+				}
+			});
 
 			this.setMetaPoint(x, y, {
-				edge: (point && count != 6),
-				inside: (point && count == 6),
+				edge: (point && count !== 6),
+				inside: (point && count === 6),
 				numNeighbors: count
 			});
 		});
+
+		return this;
 	}
 
-	grow() {
+	refresh() {
+		this.setMetaRelationships();
 
+		return this;
+	}
+
+	setElevations() {
+		// label all "0" points elev:0, then everything with 100% neighboring elev:0 becomes -1
+	}
+
+	grow(chance = 50) {
+		const percentChance = chance / 100;
+
+		this.copyToScratch();
+
+		this.eachScratchPoint((scratchPoint, x, y) => {
+			if( scratchPoint ) {
+				const metaPoint = this.getMetaPoint(x, y);
+
+				// Only expand edge points
+				if( metaPoint.edge ) {
+					// Set neighbors as true
+					NEIGHBORS_DIRS.forEach(dir => {
+						const nghbrCoords = metaPoint[dir];
+
+						if( nghbrCoords && Math.random() < percentChance ) {
+							this.setPoint(nghbrCoords.x, nghbrCoords.y, 1);
+						}
+					});
+				}
+			}
+		}, false);
+
+		return this;
 	}
 
 	erode() {
@@ -623,8 +791,8 @@ class HexGrid {
 	}
 
 	fill(minNeighbors = 6) {
-		this.eachMetaPoint((metapoint, x, y) => {
-			if( metapoint.numNeighbors >= minNeighbors ) {
+		this.eachMetaPoint((metaPoint, x, y) => {
+			if( metaPoint.numNeighbors >= minNeighbors ) {
 				this.setPoint(x, y, 1);
 			}
 		});
@@ -633,8 +801,8 @@ class HexGrid {
 	}
 
 	winnow(minNeighbors = 1) {
-		this.eachMetaPoint((metapoint, x, y) => {
-			if( metapoint.numNeighbors < minNeighbors ) {
+		this.eachMetaPoint((metaPoint, x, y) => {
+			if( metaPoint.numNeighbors < minNeighbors ) {
 				this.setPoint(x, y, 0);
 			}
 		});
@@ -673,40 +841,75 @@ class HexGrid {
 
 		return this;
 	}
-}
 
-class GameDataCell {
-	constructor() {
-		this.data = {
-			elevation: {
-				bodies: [],
-				value: 0
-			},
-			//events?
-			//city
-			//structure may need to be array
-			structure: {
-				body: false,
-				value: ""
-			},
-			terrain: {
-				//adjacent terrain values
-				body: false,
-				value: ""
-			},
-			unit: {
-				// reference army group?
-				//body: false
-			},
-			water: {
-				body: false,
-				value: ""// litoral coast, sea, river, ocean
-			},
-			weather: {
-				body: false,
-				value: ""
+	getThreadPath(startX, startY, maxLength = 20) {
+		const visited = {};
+		const randomDirs = NEIGHBORS_DIRS.clone();
+		let length = 1;
+		let currentX = startX;
+		let currentY = startY;
+		let prevDir;
+		let prevPrevDir;
+
+		visited[`${startX}-${startY}`] = true;
+
+		const path = [];
+
+		mainLoop:
+		while( length < maxLength ) {
+			let pointSet = false;
+			const metaPoint = this.getMetaPoint(currentX, currentY);
+
+			randomDirs.randomize();
+
+			dirLoop:
+			for(let i = 0; i < randomDirs.length; i++) {
+				const dir = randomDirs[i];
+				const nghbr = metaPoint[dir];
+				const key = `${nghbr.x}-${nghbr.y}`;
+
+				if(dir == prevDir || dir == prevPrevDir) {
+					continue;
+				}
+
+				if( this.hasInternalPoint(nghbr.x, nghbr.y) && !visited[key] ) {
+					this.setPoint(nghbr.x, nghbr.y, 1);
+
+					pointSet = true;
+					visited[key] = true;
+					prevPrevDir = prevDir;
+					prevDir = dir;
+					currentX = nghbr.x;
+					currentY = nghbr.y;
+
+					path.push({x: currentX, y: currentY});
+
+					length++;
+
+					break dirLoop;
+				}
 			}
-		};
+
+			if(!pointSet) {
+				const prevPoint = path.pop();
+
+				if( prevPoint ) {
+					currentX = prevPoint.x;
+					currentY = prevPoint.y;
+				} else {
+					break mainLoop;
+				}
+			}
+		}
+
+		return Object.keys(visited).map(coords => {
+			const [x, y] = coords.split('-');
+
+			return {
+				x: parseInt(x),
+				y: parseInt(y)
+			};
+		});
 	}
 }
 

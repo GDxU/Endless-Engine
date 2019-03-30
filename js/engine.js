@@ -34,7 +34,8 @@ module.exports = class Engine {
 			this.start();
 		};
 
-		//mapGenerator.generate(100, 50);
+		//mapGenerator.generate(500, 160);
+		mapGenerator.generate(350, 160);
 
 		decodeImages(onComplete);
 
@@ -148,9 +149,6 @@ module.exports = class Engine {
 
 		const hexGridTest = new HexGrid(10, 10);
 		hexGridTest.populate(60).setMetaRelationships();
-		hexGridTest.eachPointRandom((point, x, y) => {
-			console.log(x, y);
-		});
 		console.log( hexGridTest.getMetaPoint(4, 4) );
 
 		const testHexCellBodyData = {
@@ -218,7 +216,7 @@ module.exports = class Engine {
 				x: x * testHexCell44BodyData.width + x + 80,
 				y: y * testHexCell44BodyData.height + 40
 			};
-			data.y -= (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
+			data.y += (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
 			data.x -= x * 13;
 			const elevation = Math.floor(randomFromTo(0, 9));
 
@@ -232,7 +230,7 @@ module.exports = class Engine {
 					y: y * testHexCell44BodyData.height + testHexDepth44BodyData.height + 40,
 					layer: `elev:${d - 1}`
 				};
-				depthData.y -= (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
+				depthData.y += (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
 				depthData.y -= d * 2; // 2 is height/thickness of depth slice
 
 				const depthBody = new Body(depthData);
@@ -245,7 +243,7 @@ module.exports = class Engine {
 					x: x * testHexCell44BodyData.width + x + 80,
 					y: y * testHexCell44BodyData.height + 40
 				};
-				waterData.y -= (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
+				waterData.y += (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
 				waterData.x -= x * 13;
 				waterData.y += -waterElev * 2;
 				const waterBody = new Body(waterData);

@@ -1,3 +1,7 @@
+Array.prototype.clone = function() {
+	return JSON.parse( JSON.stringify(this) );
+};
+
 Array.prototype.getRandom = function() {
 	if( this.length == 0 ) {
 		return {};
@@ -32,6 +36,7 @@ Array.prototype.remove = function(value) {
 	}
 };
 
+Object.defineProperty(Array.prototype, 'clone', {enumerable: false});
 Object.defineProperty(Array.prototype, 'getRandom', {enumerable: false});
 Object.defineProperty(Array.prototype, 'randomize', {enumerable: false});
 Object.defineProperty(Array.prototype, 'remove', {enumerable: false});
