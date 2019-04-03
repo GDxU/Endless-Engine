@@ -34,8 +34,8 @@ module.exports = class Engine {
 			this.start();
 		};
 
-		//mapGenerator.generate(500, 160);
-		mapGenerator.generate(350, 160);
+		mapGenerator.generate(500, 250);
+		//mapGenerator.generate(150, 150);
 
 		decodeImages(onComplete);
 

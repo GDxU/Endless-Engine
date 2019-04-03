@@ -27,6 +27,18 @@ const data = {
 	sheets,
 	sprites,
 	textures: {},
+	tile: {
+		TEMPERATURES: {
+			FROZEN: 'frozen',
+			COLD: 'cold',
+			COOL: 'cool',
+			TEMPERATE: 'temperate',
+			WARM: 'warm',
+			HOT: 'hot'
+			//SCORCHING: 'scorching'
+		},
+		terrain: []
+	},
 	tilesetFilters: {},
 	viewports
 };

@@ -16,6 +16,9 @@ class HexCompass {
 
 		return normalized;
 	}
+	get directions() {
+		return DIRECTIONS;
+	}
 	get dir() {
 		return DIRECTIONS[this.index];
 	}
@@ -32,6 +35,20 @@ class HexCompass {
 	}
 	get opposite() {
 		return DIRECTIONS[this.normalizeIndex(this.index + RANGE / 2)];
+	}
+	get back() {
+		const halfRange = RANGE / 2;
+
+		return [
+			DIRECTIONS[this.normalizeIndex(this.index + halfRange - 1)],
+			DIRECTIONS[this.normalizeIndex(this.index + halfRange)],
+			DIRECTIONS[this.normalizeIndex(this.index + halfRange + 1)]
+		];
+	}
+	get forward() {
+		const {left, right} = this.adjacent;
+
+		return [left, DIRECTIONS[this.index], right];
 	}
 	get left() {
 		const {left} = this.adjacent;

@@ -2,76 +2,9 @@ const HexCompass = require('./hex-compass');
 
 const NEIGHBORS_DIRS = ['n', 'ne', 'se', 's', 'sw', 'nw'];
 
-const getGameDataCell = () => {
-	return {
-		elevation: {
-			bodies: [],
-			value: 0
-		},
-		structure: {
-			body: false,
-			value: ""
-		},
-		terrain: {
-			body: false,
-			value: ""
-		},
-		unit: {
-
-		},
-		water: {
-			body: false,
-			value: ""
-		},
-		weather: {
-			body: false,
-			value: ""
-		}
-	};
-};
-
-class GameDataCell {
-	constructor() {
-		this.data = {
-			elevation: {
-				bodies: [],
-				value: 0
-			},
-			//events?
-			//city
-			//structure may need to be array
-			structure: {
-				body: false,
-				value: ""
-			},
-			terrain: {
-				//adjacent terrain values
-				body: false,
-				value: ""
-			},
-			unit: {
-				// reference army group?
-				//body: false
-			},
-			water: {
-				body: false,
-				value: ""// litoral coast, sea, river, ocean
-			},
-			weather: {
-				body: false,
-				value: ""
-			}
-		};
-	}
-}
 
 class HexGrid {
-	constructor(width, height, config = {}) {
-		const compass = new HexCompass();
-		//console.log('direction', compass.rotate(1).dir );
-		console.log('random direction', compass.randomize().dir );
-		console.log('adjacents', compass.adjacent );
-		console.log('opposite', compass.opposite );
+	constructor(width, height, config = {}, createDataExemplar = () => {}) {
 		this.width = width;
 		this.height = height;
 		this.scratch = [];
@@ -94,7 +27,7 @@ class HexGrid {
 			for(let x = 0; x < this.width; x++) {
 				pointRow.push(0);
 				scratchRow.push(0);
-				dataRow.push( getGameDataCell() );
+				dataRow.push( createDataExemplar() );
 				metaRow.push( this.constructor.createBlankMeta(x, y) );
 			}
 
@@ -366,10 +299,32 @@ class HexGrid {
 		}
 	}
 
-	eachPointRandom(callback, clearFilter = true) {
-		const allPoints = [];
+	eachPointWithin(minBound, maxBound, callback, clearFilter = true) {
+		const bounds = this.normalizeBounds({min: minBound, max: maxBound});
 
-		this.eachPoint((point, x, y) => {
+		for(let {x} = bounds.min; x <= bounds.max.x; x++) {
+			for(let {y} = bounds.min; y <= bounds.max.y; y++) {
+				let point = this.points[y][x];
+
+				point = this.filterPoint(point, x, y);
+
+				if( callback(point, x, y, this) ) {
+					return;
+				}
+			}
+		}
+
+		if( clearFilter && this.pointFilter ) {
+			this.pointFilter = false;
+		}
+	}
+
+	eachPointRandom(callback, minBound = {x: 0, y: 0}, maxBound = {x: this.width - 1, y: this.height - 1}, clearFilter = true) {
+		const allPoints = [];
+		const normMinBound = this.normalize(minBound.x, minBound.y);
+		const normMaxBound = this.normalize(maxBound.x, maxBound.y);
+
+		this.eachPointWithin(normMinBound, normMaxBound, (point, x, y) => {
 			allPoints.push({x, y});
 		});
 
@@ -844,12 +799,14 @@ class HexGrid {
 
 	getThreadPath(startX, startY, maxLength = 20) {
 		const visited = {};
-		const randomDirs = NEIGHBORS_DIRS.clone();
+		const compass = new HexCompass();
 		let length = 1;
 		let currentX = startX;
 		let currentY = startY;
-		let prevDir;
-		let prevPrevDir;
+
+		compass.randomize();
+
+		let randomDirs = [...compass.back.randomize(), ...compass.forward.randomize()];
 
 		visited[`${startX}-${startY}`] = true;
 
@@ -860,27 +817,29 @@ class HexGrid {
 			let pointSet = false;
 			const metaPoint = this.getMetaPoint(currentX, currentY);
 
-			randomDirs.randomize();
-
 			dirLoop:
 			for(let i = 0; i < randomDirs.length; i++) {
 				const dir = randomDirs[i];
 				const nghbr = metaPoint[dir];
 				const key = `${nghbr.x}-${nghbr.y}`;
 
-				if(dir == prevDir || dir == prevPrevDir) {
-					continue;
-				}
-
 				if( this.hasInternalPoint(nghbr.x, nghbr.y) && !visited[key] ) {
 					this.setPoint(nghbr.x, nghbr.y, 1);
 
 					pointSet = true;
 					visited[key] = true;
-					prevPrevDir = prevDir;
-					prevDir = dir;
 					currentX = nghbr.x;
 					currentY = nghbr.y;
+					compass.dir = dir;
+					//randomDirs = [...compass.back.randomize(), ...compass.forward.randomize()];
+
+					if( Math.random() > 0.9 ) {
+						randomDirs = compass.directions;
+					}
+
+					if( Math.random() > 0.22 ) {
+						randomDirs = [...randomDirs.slice(1), randomDirs[0]];
+					}
 
 					path.push({x: currentX, y: currentY});
 
