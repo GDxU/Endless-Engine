@@ -1,39 +1,74 @@
 const fs = require('fs');
+const {getGradiatedColors, hexToRgb} = require('./util/tools');
 const HexGrid = require('./data-structures/hex-grid');
 const {getGameData} = require('../data/game-data');
 const {TEMPERATURES} = getGameData('tile');
 const {FROZEN, COLD, COOL, TEMPERATE, WARM, HOT} = TEMPERATURES;
 
-const elevColorKey = {
+/*
+const hexToRgb = (hex) => {
+	const colorR = hex.substr(1, 2);
+	const colorG = hex.substr(3, 2);
+	const colorB = hex.substr(5);
 
+	return {
+		r: parseInt(colorR, 16),
+		g: parseInt(colorG, 16),
+		b: parseInt(colorB, 16)
+	};
 };
-const tempColorKey = {
-	[FROZEN]: '#ccf5f2',
-	[COLD]: '#99f0d0',
-	[COOL]: '#60c0b0',
-	[TEMPERATE]: '#92d084',
-	[WARM]: '#ccee66',
-	[HOT]: '#ffee99'
-	//[SCORCHING]: '#ffb585'
+const getGradiatedColors = (hexA, hexB, steps) => {
+	const adjDist = steps - 2;
+	const rgbA = hexToRgb(hexA);
+	const rgbB = hexToRgb(hexB);
+	const key = [];
+	const increments = {
+		r: (rgbA.r - rgbB.r) / adjDist,
+		g: (rgbA.g - rgbB.g) / adjDist,
+		b: (rgbA.b - rgbB.b) / adjDist
+	};
+
+	key.push(hexA);
+
+	for(let i = 0; i < adjDist; i++) {
+		const stepValues = {
+			r: Math.round(rgbA.r - i * increments.r),
+			g: Math.round(rgbA.g - i * increments.g),
+			b: Math.round(rgbA.b - i * increments.b)
+		};
+		const hexR = (stepValues.r).toString(16).padStart(2, '0');
+		const hexG = (stepValues.g).toString(16).padStart(2, '0');
+		const hexB = (stepValues.b).toString(16).padStart(2, '0');
+
+		key.push(`#${hexR}${hexG}${hexB}`);
+	}
+
+	key.push(hexB);
+
+	return key;
 };
+*/
+
 const DIRECTIONS = ['n', 'ne', 'se', 's', 'sw', 'nw'];
 const createDataExemplar = () => {
 	return {
 		depth: 0,
+		elevation: 0,
+		moisture: 0,
 		land: false,
+		temperature: 0,
+		/*
 		elevation: {
 			bodies: [],
 			value: 0
 		},
+		*/
 		//events?
 		//city
 		//structure may need to be array
 		structure: {
 			body: false,
 			value: ""
-		},
-		temperature: {
-			value: TEMPERATE
 		},
 		terrain: {
 			body: false,
@@ -48,6 +83,7 @@ const createDataExemplar = () => {
 			body: false,
 			value: ""
 		},
+		// dust storm, hurricane, atmospheric storm, lightning, rain + clouds
 		weather: {
 			body: false,
 			value: ""
@@ -60,7 +96,6 @@ class MapGenerator {
 		this.grid = false;
 		this.height = 0;
 		this.width = 0;
-
 		this.gridData = {};
 	}
 	static countNeighbors(cell, minElev) {
@@ -68,7 +103,7 @@ class MapGenerator {
 
 		DIRECTIONS.forEach(dir => {
 			const nghbr = cell[dir]
-			if( nghbr.elevation.value >= minElev ) {
+			if( nghbr.elevation >= minElev ) {
 				count++;
 			}
 		});
@@ -95,11 +130,13 @@ class MapGenerator {
 
 			landDepth++;
 		}
+
 		for(let d = 1; d < 6; d++) {
 			this.setWaterDepth(d);
 		}
-		this.setTemperatures();
-		this.setElevations();
+		this.setTemperature();
+		this.setElevation();
+		this.setMoisture();
 		// NOTE: for 2-wide sea shelf, do half increments, then once finished go back and either round down/up them or round them at random
 
 		this.print();
@@ -140,16 +177,71 @@ class MapGenerator {
 		this.grid.eachPoint((point, x, y, self) => {
 			if(point) {
 				self.setDataPoint(x, y, {
-					elevation: {
-						bodies: [],
-						value: 1
-					},
+					elevation: 1,
 					land: true
 				})
 			}
 		});
 	}
-	setTemperatures() {
+	setMoisture() {
+		const halfGlobeWidth = this.height * 0.5;
+		const poleWidth = halfGlobeWidth * 0.25;
+		const innerWidth = halfGlobeWidth * 0.75 * 0.5;
+
+		const band1 = poleWidth;
+		const band2 = poleWidth + innerWidth;
+		const band3 = poleWidth + innerWidth * 2;
+		const band4 = poleWidth + innerWidth * 3;
+		const band5 = poleWidth + innerWidth * 4;
+
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			let moisture = 100;
+
+			switch(true) {
+				case y > band5:
+					break;
+				case y > band4:
+					moisture = Math.round(100 * (y - band4) / innerWidth);
+					break;
+				case y > band3:
+					moisture = 100 - Math.round(100 * (y - band3) / innerWidth);
+					break;
+				case y > band2:
+					moisture = Math.round(100 * (y - band2) / innerWidth);
+					break;
+				case y > band1:
+					moisture = 100 - Math.round(100 * (y - band1) / innerWidth);
+					break;
+				default:
+					break;
+			}
+
+			self.setDataPoint(x, y, {moisture});
+		});
+	}
+	setTemperature() {
+		const poleBuffer = 8;
+		const halfHeight = this.height * 0.5;
+		const slope = 100 / (halfHeight - poleBuffer);
+
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			let temperature;
+
+			if(y > halfHeight) {
+				temperature = 100 - Math.floor(slope * (y - halfHeight));
+			} else {
+				temperature = Math.ceil(slope * (y - poleBuffer));
+			}
+			if(temperature < 0) {
+				temperature = 0;
+			}
+			if(temperature > 100) {
+				temperature = 100;
+			}
+
+			self.setDataPoint(x, y, {temperature});
+		});
+		/*
 		const temperatureList = Object.values(TEMPERATURES);
 		const temperatureWeights = [1, 2, 3, 3, 3, 2];
 		const totalWeight = temperatureWeights.reduce((agg, val) => {
@@ -191,6 +283,7 @@ class MapGenerator {
 				});
 			}
 		});
+		*/
 	}
 	setLandDepth(depth) {
 		const sinkPoints = [];
@@ -268,7 +361,7 @@ class MapGenerator {
 			})
 		});
 	}
-	setElevations() {
+	setElevation() {
 		const waterDepthElevationKey = [
 			-1,
 			-2,
@@ -281,10 +374,7 @@ class MapGenerator {
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
 			if(!dataPoint.land) {
 				self.setDataPoint(x, y, {
-					elevation: {
-						bodies: [],
-						value: waterDepthElevationKey[dataPoint.depth]
-					}
+					elevation: waterDepthElevationKey[dataPoint.depth]
 				});
 			}
 		});
@@ -325,8 +415,10 @@ class MapGenerator {
 		fs.writeSync(htmlMap, '</body></html>');
 		fs.closeSync(htmlMap);
 		*/
+		const temperatureColorKey = getGradiatedColors('#335577', '#ee9977', 101);
+		const moistureColorKey = getGradiatedColors('#eeaa77', '#55dd88', 101);
 
-		fs.writeSync(htmlMap, `<html><header><title>Visual Map</title><style type="text/css">body { background: black; width: ${CALC_DOC_WIDTH}; } canvas { margin-top: calc(${CALC_DOC_HEIGHT}px * -0.19); transform: scale(1, 0.62); } .box { width: ${VIS_TILE_SIZE}px; height: ${VIS_TILE_SIZE}px; float: left; }</style></header><body>`);
+		fs.writeSync(htmlMap, `<html><header><title>Visual Map</title><style type="text/css">body { background: black; width: ${CALC_DOC_WIDTH}; } canvas { border-width: 2px 1px; border-style: solid; border-color: white; margin-top: calc(${CALC_DOC_HEIGHT}px * -0.19); transform: scale(1, 0.62); } .box { width: ${VIS_TILE_SIZE}px; height: ${VIS_TILE_SIZE}px; float: left; }</style></header><body>`);
 		fs.writeSync(htmlMap, `<canvas id="canvas" width="${CALC_DOC_WIDTH}" height="${CALC_DOC_HEIGHT}"></canvas>`);
 		fs.writeSync(htmlMap, '<script type="text/javascript">');
 
@@ -338,34 +430,9 @@ class MapGenerator {
 			let hex = '#3354a9';
 
 			if(point) {
-				hex = tempColorKey[dataPoint.temperature.value];
-
 				if(dataPoint.depth === 0) {
 					hex = '#ff7799';
 				}
-				/*
-				if(dataPoint.depth === 1) {
-					hex = '#ffff99';
-				}
-				if(dataPoint.depth === 2) {
-					hex = '#cc7755';
-				}
-				if(dataPoint.depth === 3) {
-					hex = '#00ff66';
-				}
-				if(dataPoint.depth === 4) {
-					hex = '#aa4444';
-				}
-				if(dataPoint.depth === 5) {
-					hex = '#401111';
-				}
-				if(dataPoint.depth === 6) {
-					hex = '#403366';
-				}
-				if(dataPoint.depth === 7) {
-					hex = '#507711';
-				}
-				*/
 				if(dataPoint.depth > 0) {
 					if(dataPoint.depth % 2 === 0) {
 						if(dataPoint.depth > 7) {
@@ -394,7 +461,7 @@ class MapGenerator {
 			} else {
 				const dataPoint = self.getDataPoint(x, y);
 
-				switch(dataPoint.elevation.value) {
+				switch(dataPoint.elevation) {
 					case -1:
 						hex = '#3354a9';
 						break;
@@ -416,6 +483,11 @@ class MapGenerator {
 					default:
 						break;
 				}
+			}
+
+			if(dataPoint.land) {
+				hex = moistureColorKey[dataPoint.moisture];
+				//hex = temperatureColorKey[dataPoint.temperature];
 			}
 
 			varData += `{'color': '${hex}', x: ${x}, y: ${y}},`;

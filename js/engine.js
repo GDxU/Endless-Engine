@@ -35,6 +35,7 @@ module.exports = class Engine {
 		};
 
 		mapGenerator.generate(500, 250);
+		//mapGenerator.generate(40, 250);
 		//mapGenerator.generate(150, 150);
 
 		decodeImages(onComplete);
@@ -207,7 +208,7 @@ module.exports = class Engine {
 		};
 		const cellMousedownCallback = (self, e) => {
 			console.log("clicked cell", "elevation:", self.hexCell.elevation);
-			highlightedElev = self.hexCell.elevation.value;
+			highlightedElev = self.hexCell.elevation;
 		};
 		hexGridTest.eachMetaPoint((cell, x, y) => {
 			//console.log(hexGridTest.getCell(x, y).terrain);
@@ -253,7 +254,7 @@ module.exports = class Engine {
 			const body = new Body(data);
 
 			testWorldOne.addBodies(body);
-			//cell.data.elevation.value = elevation; // REMOVE THIS
+			//cell.data.elevation = elevation; // REMOVE THIS
 			//body.hexCell = cell;
 			body.addMouseInput('mousemove', {callback: cellMousemoveCallback});
 			body.addMouseInput('mousedown', {callback: cellMousedownCallback, key: 'left'});
