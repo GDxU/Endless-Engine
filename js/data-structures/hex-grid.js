@@ -857,14 +857,49 @@ class HexGrid {
 		const points = [];
 		const compass = new HexCompass();
 		const centerMetaPoint = this.getMetaPoint(centerX, centerY);
-		let currentMeta;
+		let offset = centerMetaPoint.offset;
+		const centerOffset = offset;
+		let current;
 
 		HEX_DIRECTIONS.forEach(dir => {
 			compass.dir = dir;
-			currentMeta = centerMetaPoint;
+			current = {
+				x: centerX,
+				y: centerY
+			};
+			offset = centerOffset;
 
 			for(let i = 0; i < radius; i++) {
+				const nextCoords = this.getDirectionCoords(current.x, current.y, compass.dir, offset);
 
+				if(i === radius - 1) {
+					points.push(nextCoords);
+				}
+				if(nextCoords.x !== current.x) {
+					offset = !offset;
+				}
+
+				current = {
+					x: nextCoords.x,
+					y: nextCoords.y
+				};
+			}
+
+			compass.rotate(2);
+
+			for(let i = 0; i < radius - 1; i++) {
+				const nextCoords = this.getDirectionCoords(current.x, current.y, compass.dir, offset);
+
+				points.push(nextCoords);
+
+				if(nextCoords.x !== current.x) {
+					offset = !offset;
+				}
+
+				current = {
+					x: nextCoords.x,
+					y: nextCoords.y
+				};
 			}
 		});
 

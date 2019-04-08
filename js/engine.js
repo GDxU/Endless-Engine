@@ -35,7 +35,7 @@ module.exports = class Engine {
 		};
 
 		//mapGenerator.generate(500, 250);
-		mapGenerator.generate(200, 250);
+		mapGenerator.generate(500, 250);
 		//mapGenerator.generate(40, 250);
 		//mapGenerator.generate(150, 150);
 

@@ -6,7 +6,7 @@ const {HEX_DIRECTIONS} = require('../data/strings');
 const createDataExemplar = () => {
 	return {
 		depth: 0,
-		depthRays: {},
+		//depthRays: {},
 		elevation: 0,
 		moisture: 0,
 		land: false,
@@ -98,35 +98,46 @@ class MapGenerator {
 		}
 		*/
 		this.setTemperature();
-		this.setElevation();
 
+		// TODO: potentially add test during ring generation so it can be interrupted
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
-			const landTest = (rayX, rayY) => {
-				const rayDataPoint = self.getDataPoint(rayX, rayY);
-
-				return (rayDataPoint && rayDataPoint.land === true);
+			const landTest = dataPoint => {
+				return (dataPoint.land === true);
 			};
-			const waterTest = (rayX, rayY) => {
-				const rayDataPoint = self.getDataPoint(rayX, rayY);
-
-				return (rayDataPoint && rayDataPoint.land === false);
+			const waterTest = dataPoint => {
+				return (dataPoint.land === false);
 			};
 			const test = dataPoint.land ? landTest : waterTest;
-			const depthRays = self.castRays(x, y, test);
-			let shortest = false;
 
-			Object.values(depthRays).forEach(ray => {
-				if(shortest === false) {
-					shortest = ray.length;
+			let radius = 1;
+
+			ringLoop:
+			while(true) {
+				const ring = self.getRing(x, y, radius);
+				let internalMapPoints = 0;
+
+				for(let r = 0; r < ring.length; r++) {
+					const nghbr = ring[r];
+					const nghbrDataPoint = self.getDataPoint(nghbr.x, nghbr.y);
+
+					if(nghbrDataPoint) {
+						internalMapPoints++;
+
+						if(!test(nghbrDataPoint)) {
+							break ringLoop;
+						}
+					}
 				}
-				if(ray.length < shortest) {
-					shortest = ray.length;
+
+				if(!internalMapPoints) {
+					break ringLoop;
 				}
-			});
+
+				radius++;
+			}
 
 			self.setDataPoint(x, y, {
-				depth: shortest,
-				depthRays
+				depth: radius - 1,
 			});
 		});
 
@@ -182,6 +193,7 @@ class MapGenerator {
 		}
 		*/
 
+		this.setElevation();
 		this.setMoisture();
 
 
@@ -414,13 +426,16 @@ class MapGenerator {
 			-3,
 			-4,
 			-5,
-			-6
+			-6,
+			-7
 		];
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
 			if(!dataPoint.land) {
+				const elevation = (dataPoint.depth >= waterDepthElevationKey.length) ? -6 : waterDepthElevationKey[dataPoint.depth];
+
 				self.setDataPoint(x, y, {
-					elevation: waterDepthElevationKey[dataPoint.depth]
+					elevation
 				});
 			}
 		});
@@ -525,6 +540,9 @@ class MapGenerator {
 						break;
 					case -6:
 						hex = '#041766';
+						break;
+					case -7:
+						hex = '#001057';
 						break;
 					default:
 						break;
