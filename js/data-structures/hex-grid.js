@@ -1,6 +1,6 @@
 const HexCompass = require('./hex-compass');
-
-const NEIGHBORS_DIRS = ['n', 'ne', 'se', 's', 'sw', 'nw'];
+const {HEX_DIRECTIONS} = require('../../data/strings');
+//const NEIGHBORS_DIRS = ['n', 'ne', 'se', 's', 'sw', 'nw'];
 
 
 class HexGrid {
@@ -44,7 +44,6 @@ class HexGrid {
 			}
 		}
 
-		/*
 		this.eachPoint((point, x, y) => {
 			const xMod = x % 2;
 			const even = (xMod == 0);
@@ -56,162 +55,145 @@ class HexGrid {
 
 			// s
 			if( y < this.height - 1 ) {
-				this.setMetaPoint(x, y, {
-					//s: this.getMetaPoint(x, y + 1)
-					s: {x, y: y + 1}
-				});
-			}
-			// n
-			if( y > 0 ) {
-				this.setMetaPoint(x, y, {
-					//n: this.getMetaPoint(x, y - 1)
-					n: {x, y: y - 1}
-				});
-			}
-			if( x > 0 ) {
-				// nw
-				if( y > 0 || even ) {
-					if( even ) {
-						this.setMetaPoint(x, y, {
-							//nw: this.getMetaPoint(x - 1, y)
-							nw: {x: x - 1, y}
-						});
-					} else {
-						this.setMetaPoint(x, y, {
-							//nw: this.getMetaPoint(x - 1, y - 1)
-							nw: {x: x - 1, y: y - 1}
-						});
-					}
-				}
-				// sw
-				if( y < this.height - 1 || odd ) {
-					if( odd ) {
-						this.setMetaPoint(x, y, {
-							//sw: this.getMetaPoint(x - 1, y)
-							sw: {x: x - 1, y}
-						});
-					} else {
-						this.setMetaPoint(x, y, {
-							//sw: this.getMetaPoint(x - 1, y + 1)
-							sw: {x: x - 1, y: y + 1}
-						});
-					}
-				}
-			}
-			if( x < this.width - 1 ) {
-				// ne
-				if( y > 0 || even ) {
-					if( even ) {
-						this.setMetaPoint(x, y, {
-							//ne: this.getMetaPoint(x + 1, y)
-							ne: {x: x + 1, y}
-						});
-					} else {
-						this.setMetaPoint(x, y, {
-							//ne: this.getMetaPoint(x + 1, y - 1)
-							ne: {x: x + 1, y: y - 1}
-						});
-					}
-				}
-				// se
-				if( y < this.height - 1 || odd ) {
-					if( odd ) {
-						this.setMetaPoint(x, y, {
-							//se: this.getMetaPoint(x + 1, y)
-							se: {x: x + 1, y}
-						});
-					} else {
-						this.setMetaPoint(x, y, {
-							//se: this.getMetaPoint(x + 1, y + 1)
-							se: {x: x + 1, y: y + 1}
-						});
-					}
-				}
-			}
-		});
-		*/
+				const coords = this.getDirectionCoords(x, y, HEX_DIRECTIONS[3], true);
 
-		this.eachPoint((point, x, y) => {
-			const xMod = x % 2;
-			const even = (xMod == 0);
-			const odd = (xMod == 1);
-
-			if(even) {
-				this.setMetaPoint(x, y, {offset: true});
-			}
-
-			// s
-			if( y < this.height - 1 ) {
 				this.setMetaPoint(x, y, {
-					s: {x, y: y + 1}
+					[HEX_DIRECTIONS[3]]: this.normalize(coords.x, coords.y)
 				});
 			}
 
 			// n
 			if( y > 0 ) {
+				const coords = this.getDirectionCoords(x, y, HEX_DIRECTIONS[0], true);
+
 				this.setMetaPoint(x, y, {
-					n: {x, y: y - 1}
+					[HEX_DIRECTIONS[0]]: this.normalize(coords.x, coords.y)
 				});
 			}
 
 			// nw
 			if( y > 0 || even ) {
-				if( even ) {
-					this.setMetaPoint(x, y, {
-						//nw: {x: x - 1, y}
-						nw: this.normalize(x - 1, y)
-					});
-				} else {
-					this.setMetaPoint(x, y, {
-						//nw: {x: x - 1, y: y - 1}
-						nw: this.normalize(x - 1, y - 1)
-					});
-				}
+				const coords = this.getDirectionCoords(x, y, HEX_DIRECTIONS[5], even);
+
+				this.setMetaPoint(x, y, {
+					[HEX_DIRECTIONS[5]]: this.normalize(coords.x, coords.y)
+				});
 			}
 			// sw
 			if( y < this.height - 1 || odd ) {
-				if( odd ) {
-					this.setMetaPoint(x, y, {
-						//sw: {x: x - 1, y}
-						sw: this.normalize(x - 1, y)
-					});
-				} else {
-					this.setMetaPoint(x, y, {
-						//sw: {x: x - 1, y: y + 1}
-						sw: this.normalize(x - 1, y + 1)
-					});
-				}
+				const coords = this.getDirectionCoords(x, y, HEX_DIRECTIONS[4], even);
+
+				this.setMetaPoint(x, y, {
+					[HEX_DIRECTIONS[4]]: this.normalize(coords.x, coords.y)
+				});
 			}
 
 			// ne
 			if( y > 0 || even ) {
-				if( even ) {
-					this.setMetaPoint(x, y, {
-						//ne: {x: x + 1, y}
-						ne: this.normalize(x + 1, y)
-					});
-				} else {
-					this.setMetaPoint(x, y, {
-						//ne: {x: x + 1, y: y - 1}
-						ne: this.normalize(x + 1, y - 1)
-					});
-				}
+				const coords = this.getDirectionCoords(x, y, HEX_DIRECTIONS[1], even);
+
+				this.setMetaPoint(x, y, {
+					[HEX_DIRECTIONS[1]]: this.normalize(coords.x, coords.y)
+				});
 			}
 			// se
 			if( y < this.height - 1 || odd ) {
-				if( odd ) {
-					this.setMetaPoint(x, y, {
-						//se: {x: x + 1, y}
-						se: this.normalize(x + 1, y)
-					});
-				} else {
-					this.setMetaPoint(x, y, {
-						//se: {x: x + 1, y: y + 1}
-						se: this.normalize(x + 1, y + 1)
-					});
-				}
+				const coords = this.getDirectionCoords(x, y, HEX_DIRECTIONS[2], even);
+
+				this.setMetaPoint(x, y, {
+					[HEX_DIRECTIONS[2]]: this.normalize(coords.x, coords.y)
+				});
 			}
 		});
+	}
+
+	getDirectionCoords(x, y, direction, offset) {
+		let trueOffset;
+		let dirX;
+		let dirY;
+
+		if(offset === true || offset === false) {
+			trueOffset = offset;
+		} else {
+			trueOffset = this.getMetaPoint(x, y).offset;
+		}
+
+		if(trueOffset) {
+			switch(direction) {
+				// north
+				case HEX_DIRECTIONS[0]:
+					dirX = x;
+					dirY = y - 1;
+					break;
+				// northeast
+				case HEX_DIRECTIONS[1]:
+					dirX = x + 1;
+					dirY = y;
+					break;
+				// southeast
+				case HEX_DIRECTIONS[2]:
+					dirX = x + 1;
+					dirY = y + 1;
+					break;
+				// south
+				case HEX_DIRECTIONS[3]:
+					dirX = x;
+					dirY = y + 1;
+					break;
+				// southwest
+				case HEX_DIRECTIONS[4]:
+					dirX = x - 1;
+					dirY = y + 1;
+					break;
+				// northwest
+				case HEX_DIRECTIONS[5]:
+					dirX = x - 1;
+					dirY = y;
+					break;
+				default:
+					break;
+			}
+		} else {
+			switch(direction) {
+				// north
+				case HEX_DIRECTIONS[0]:
+					dirX = x;
+					dirY = y - 1;
+					break;
+				// northeast
+				case HEX_DIRECTIONS[1]:
+					dirX = x + 1;
+					dirY = y - 1;
+					break;
+				// southeast
+				case HEX_DIRECTIONS[2]:
+					dirX = x + 1;
+					dirY = y;
+					break;
+				// south
+				case HEX_DIRECTIONS[3]:
+					dirX = x;
+					dirY = y + 1;
+					break;
+				// southwest
+				case HEX_DIRECTIONS[4]:
+					dirX = x - 1;
+					dirY = y;
+					break;
+				// northwest
+				case HEX_DIRECTIONS[5]:
+					dirX = x - 1;
+					dirY = y - 1;
+					break;
+				default:
+					break;
+			}
+		}
+
+		return {
+			x: dirX,
+			y: dirY
+		};
 	}
 
 	static createBlankMeta(x = false, y = false) {
@@ -683,7 +665,7 @@ class HexGrid {
 			let count = 0;
 			const metaPoint = this.getMetaPoint(x, y);
 
-			NEIGHBORS_DIRS.forEach(dir => {
+			HEX_DIRECTIONS.forEach(dir => {
 				const nghbrCoords = metaPoint[dir];
 
 				if(nghbrCoords) {
@@ -727,7 +709,7 @@ class HexGrid {
 				// Only expand edge points
 				if( metaPoint.edge ) {
 					// Set neighbors as true
-					NEIGHBORS_DIRS.forEach(dir => {
+					HEX_DIRECTIONS.forEach(dir => {
 						const nghbrCoords = metaPoint[dir];
 
 						if( nghbrCoords && Math.random() < percentChance ) {
@@ -797,7 +779,7 @@ class HexGrid {
 		return this;
 	}
 
-	getThreadPath(startX, startY, maxLength = 20) {
+	getBlobShape(startX, startY, maxLength = 20) {
 		const visited = {};
 		const compass = new HexCompass();
 		let length = 1;
@@ -839,6 +821,136 @@ class HexGrid {
 
 					if( Math.random() > 0.22 ) {
 						randomDirs = [...randomDirs.slice(1), randomDirs[0]];
+					}
+
+					path.push({x: currentX, y: currentY});
+
+					length++;
+
+					break dirLoop;
+				}
+			}
+
+			if(!pointSet) {
+				const prevPoint = path.pop();
+
+				if( prevPoint ) {
+					currentX = prevPoint.x;
+					currentY = prevPoint.y;
+				} else {
+					break mainLoop;
+				}
+			}
+		}
+
+		return Object.keys(visited).map(coords => {
+			const [x, y] = coords.split('-');
+
+			return {
+				x: parseInt(x),
+				y: parseInt(y)
+			};
+		});
+	}
+
+	getRing(centerX, centerY, radius) {
+		const points = [];
+		const compass = new HexCompass();
+		const centerMetaPoint = this.getMetaPoint(centerX, centerY);
+		let currentMeta;
+
+		HEX_DIRECTIONS.forEach(dir => {
+			compass.dir = dir;
+			currentMeta = centerMetaPoint;
+
+			for(let i = 0; i < radius; i++) {
+
+			}
+		});
+
+		return points;
+	}
+
+	castRays(x, y, test) {
+		const rays = HEX_DIRECTIONS.reduce((aggregator, dir) => {
+			aggregator[dir] = [];
+
+			return aggregator;
+		}, {});
+
+		HEX_DIRECTIONS.forEach(dir => {
+			let currentPoint = {x, y};
+
+			rayLoop:
+			while(true) {
+				const metaPoint = this.getMetaPoint(currentPoint.x, currentPoint.y);
+				const nextPointCoords = metaPoint[dir];
+
+				if( !nextPointCoords || !test || !test(nextPointCoords.x, nextPointCoords.y) ) {
+					break rayLoop;
+				}
+
+				rays[dir].push({x: nextPointCoords.x, y: nextPointCoords.y});
+
+				currentPoint = nextPointCoords;
+				if(rays[dir].length > 320) {
+					console.log("WHILE LOOP FAILURE at source point", x, y);
+					break rayLoop;
+				}
+			}
+		});
+
+		return rays;
+	}
+
+	getWindingPath(startX, startY, {maxLength = 30, startDir}) {
+		const visited = {};
+		const compass = new HexCompass();
+		let length = 1;
+		let currentX = startX;
+		let currentY = startY;
+
+		if(startDir) {
+			compass.dir = startDir;
+		} else {
+			compass.randomize();
+		}
+
+		let randomDirs = compass.forward.randomize();
+
+		visited[`${startX}-${startY}`] = true;
+
+		const path = [];
+
+		mainLoop:
+		while( length < maxLength ) {
+			let pointSet = false;
+			const metaPoint = this.getMetaPoint(currentX, currentY);
+
+			dirLoop:
+			for(let i = 0; i < randomDirs.length; i++) {
+				const dir = randomDirs[i];
+				const nghbr = metaPoint[dir];
+				const key = `${nghbr.x}-${nghbr.y}`;
+
+				if( this.hasInternalPoint(nghbr.x, nghbr.y) && !visited[key] ) {
+					this.setPoint(nghbr.x, nghbr.y, 1);
+
+					pointSet = true;
+					visited[key] = true;
+					currentX = nghbr.x;
+					currentY = nghbr.y;
+					//compass.dir = dir;
+					//randomDirs = compass.forward.randomize();
+					if(Math.random() > 0.9) {
+						//randomDirs = [...compass.back.randomize(), ...compass.forward.randomize()];
+						randomDirs = compass.back.randomize();
+					} else {
+						if(Math.random() > 0.5) {
+							randomDirs.randomize();
+						} else {
+							randomDirs = compass.forward.randomize();
+						}
 					}
 
 					path.push({x: currentX, y: currentY});

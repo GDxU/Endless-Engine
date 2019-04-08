@@ -1,58 +1,12 @@
 const fs = require('fs');
 const {getGradiatedColors, hexToRgb} = require('./util/tools');
 const HexGrid = require('./data-structures/hex-grid');
-const {getGameData} = require('../data/game-data');
-const {TEMPERATURES} = getGameData('tile');
-const {FROZEN, COLD, COOL, TEMPERATE, WARM, HOT} = TEMPERATURES;
+const {HEX_DIRECTIONS} = require('../data/strings');
 
-/*
-const hexToRgb = (hex) => {
-	const colorR = hex.substr(1, 2);
-	const colorG = hex.substr(3, 2);
-	const colorB = hex.substr(5);
-
-	return {
-		r: parseInt(colorR, 16),
-		g: parseInt(colorG, 16),
-		b: parseInt(colorB, 16)
-	};
-};
-const getGradiatedColors = (hexA, hexB, steps) => {
-	const adjDist = steps - 2;
-	const rgbA = hexToRgb(hexA);
-	const rgbB = hexToRgb(hexB);
-	const key = [];
-	const increments = {
-		r: (rgbA.r - rgbB.r) / adjDist,
-		g: (rgbA.g - rgbB.g) / adjDist,
-		b: (rgbA.b - rgbB.b) / adjDist
-	};
-
-	key.push(hexA);
-
-	for(let i = 0; i < adjDist; i++) {
-		const stepValues = {
-			r: Math.round(rgbA.r - i * increments.r),
-			g: Math.round(rgbA.g - i * increments.g),
-			b: Math.round(rgbA.b - i * increments.b)
-		};
-		const hexR = (stepValues.r).toString(16).padStart(2, '0');
-		const hexG = (stepValues.g).toString(16).padStart(2, '0');
-		const hexB = (stepValues.b).toString(16).padStart(2, '0');
-
-		key.push(`#${hexR}${hexG}${hexB}`);
-	}
-
-	key.push(hexB);
-
-	return key;
-};
-*/
-
-const DIRECTIONS = ['n', 'ne', 'se', 's', 'sw', 'nw'];
 const createDataExemplar = () => {
 	return {
 		depth: 0,
+		depthRays: {},
 		elevation: 0,
 		moisture: 0,
 		land: false,
@@ -101,7 +55,7 @@ class MapGenerator {
 	static countNeighbors(cell, minElev) {
 		let count = 0;
 
-		DIRECTIONS.forEach(dir => {
+		HEX_DIRECTIONS.forEach(dir => {
 			const nghbr = cell[dir]
 			if( nghbr.elevation >= minElev ) {
 				count++;
@@ -120,8 +74,16 @@ class MapGenerator {
 			wrap: true
 		}, createDataExemplar);
 
+		/*
+		const path = this.grid.getWindingPath(200, 100, 130);
+		path.forEach(({x, y}) => {
+			this.grid.setPoint(x, y, 1);
+		});
+		*/
+
 		this.seedContinents();
 
+		/*
 		let landDepth = 1;
 		while(true) {
 			if( !this.setLandDepth(landDepth) ) {
@@ -134,10 +96,94 @@ class MapGenerator {
 		for(let d = 1; d < 6; d++) {
 			this.setWaterDepth(d);
 		}
+		*/
 		this.setTemperature();
 		this.setElevation();
+
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			const landTest = (rayX, rayY) => {
+				const rayDataPoint = self.getDataPoint(rayX, rayY);
+
+				return (rayDataPoint && rayDataPoint.land === true);
+			};
+			const waterTest = (rayX, rayY) => {
+				const rayDataPoint = self.getDataPoint(rayX, rayY);
+
+				return (rayDataPoint && rayDataPoint.land === false);
+			};
+			const test = dataPoint.land ? landTest : waterTest;
+			const depthRays = self.castRays(x, y, test);
+			let shortest = false;
+
+			Object.values(depthRays).forEach(ray => {
+				if(shortest === false) {
+					shortest = ray.length;
+				}
+				if(ray.length < shortest) {
+					shortest = ray.length;
+				}
+			});
+
+			self.setDataPoint(x, y, {
+				depth: shortest,
+				depthRays
+			});
+		});
+
+		// NOTE: ridge line should dip in some places to form series of peaks
+		/*
+		let successes = 0;
+		this.grid.eachPointRandom((point, randX, randY, self) => {
+			const randDataPoint = self.getDataPoint(randX, randY);
+
+			if(randDataPoint.land && randDataPoint.depth >= 12) {
+				const rays = self.castRays(randX, randY, (x, y) => {
+					const dataPoint = self.getDataPoint(x, y);
+
+					return (dataPoint && dataPoint.land === true);
+				});
+				console.log("rays", rays);
+				Object.values(rays).forEach(ray => {
+					ray.forEach(({x, y}) => {
+						self.setPoint(x, y, 1);
+						self.setDataPoint(x, y, {special: true});
+					});
+				});
+				const path = self.getWindingPath(randX, randY, {maxLength: 100, startDir: 'n'});
+
+				path.forEach(({x, y}) => {
+					//self.setPoint(x, y, 1);
+					//self.setDataPoint(x, y, {special: true});
+				});
+
+				if( ++successes >= 5) {
+					return true;
+				}
+			}
+		});
+		*/
+
+		/*
+		while(successes < 4) {
+			const randPoint = this.grid.getRandomPoint();
+			const randDataPoint = this.grid.getDataPoint(randPoint.x, randPoint.y);
+
+			if(randDataPoint.land && randDataPoint.depth >= 14) {
+				const path = this.grid.getWindingPath(randPoint.x, randPoint.y, 100);
+
+				path.forEach(({x, y}) => {
+					this.grid.setPoint(x, y, 1);
+					this.grid.setDataPoint(x, y, {special: true});
+				});
+
+				//break;
+				successes++;
+			}
+		}
+		*/
+
 		this.setMoisture();
-		// NOTE: for 2-wide sea shelf, do half increments, then once finished go back and either round down/up them or round them at random
+
 
 		this.print();
 
@@ -146,28 +192,28 @@ class MapGenerator {
 	seedContinents() {
 		// Ice Caps
 		{
-			const path = this.grid.getThreadPath(Math.floor(this.width / 2), 0, 4700);
-			const path2 = this.grid.getThreadPath(Math.floor(this.width / 2), this.height - 1, 4700);
+			const path = this.grid.getBlobShape(Math.floor(this.width / 2), 0, 4700);
+			const path2 = this.grid.getBlobShape(Math.floor(this.width / 2), this.height - 1, 4700);
 
 			[...path, ...path2].forEach(({x, y}) => {
 				this.grid.setPoint(x, y, 1);
 			});
 		}
 		// Continents
-		const BIG_SIZES = [4000, 4000, 3500, 3000, 2500];
+		const BIG_SIZES = [4000, 4000, 3500, 3200, 2600];
 		for(let i = 0; i < BIG_SIZES.length; i++) {
 			const randStart = this.grid.getRandomPoint({x: 0, y: Math.ceil(this.height * 0.32)}, {x: this.width - 1, y: Math.floor(this.height * 0.68)});
-			const path = this.grid.getThreadPath(randStart.x, randStart.y, BIG_SIZES[i]);
+			const path = this.grid.getBlobShape(randStart.x, randStart.y, BIG_SIZES[i]);
 
 			path.forEach(({x, y}) => {
 				this.grid.setPoint(x, y, 1);
 			});
 		}
 
-		const SIZES = [2000, 1600, 1200, 900, 900, 700, 500, 300, 300, 300, 300, 300, 200, 200];
+		const SIZES = [2500, 2000, 1600, 1200, 900, 900, 900, 900, 700, 500, 300, 300, 300, 300, 300, 200, 200];
 		for(let i = 0; i < SIZES.length; i++) {
 			const randStart = this.grid.getRandomPoint({x: 0, y: Math.ceil(this.height * 0.1)}, {x: this.width - 1, y: Math.floor(this.height * 0.9)});
-			const path = this.grid.getThreadPath(randStart.x, randStart.y, SIZES[i]);
+			const path = this.grid.getBlobShape(randStart.x, randStart.y, SIZES[i]);
 
 			path.forEach(({x, y}) => {
 				this.grid.setPoint(x, y, 1);
@@ -296,8 +342,8 @@ class MapGenerator {
 				let valid = true;
 				const metaPoint = self.getMetaPoint(x, y);
 
-				for(let i = 0, len = DIRECTIONS.length; i < len; i++) {
-					const dir = DIRECTIONS[i];
+				for(let i = 0, len = HEX_DIRECTIONS.length; i < len; i++) {
+					const dir = HEX_DIRECTIONS[i];
 					const nghbrCoords = metaPoint[dir];
 
 					if(nghbrCoords) {
@@ -335,8 +381,8 @@ class MapGenerator {
 				let valid = true;
 				const metaPoint = self.getMetaPoint(x, y);
 
-				for(let i = 0, len = DIRECTIONS.length; i < len; i++) {
-					const dir = DIRECTIONS[i];
+				for(let i = 0, len = HEX_DIRECTIONS.length; i < len; i++) {
+					const dir = HEX_DIRECTIONS[i];
 					const nghbrCoords = metaPoint[dir];
 
 					if(nghbrCoords) {
@@ -418,7 +464,7 @@ class MapGenerator {
 		const temperatureColorKey = getGradiatedColors('#335577', '#ee9977', 101);
 		const moistureColorKey = getGradiatedColors('#eeaa77', '#55dd88', 101);
 
-		fs.writeSync(htmlMap, `<html><header><title>Visual Map</title><style type="text/css">body { background: black; width: ${CALC_DOC_WIDTH}; } canvas { border-width: 2px 1px; border-style: solid; border-color: white; margin-top: calc(${CALC_DOC_HEIGHT}px * -0.19); transform: scale(1, 0.62); } .box { width: ${VIS_TILE_SIZE}px; height: ${VIS_TILE_SIZE}px; float: left; }</style></header><body>`);
+		fs.writeSync(htmlMap, `<html><header><title>Visual Map</title><style type="text/css">body { background: black; width: ${CALC_DOC_WIDTH}; } canvas { border-width: 0; border-style: solid; border-color: white; margin-top: calc(${CALC_DOC_HEIGHT}px * -0.19); transform: scale(1, 0.62); } .box { width: ${VIS_TILE_SIZE}px; height: ${VIS_TILE_SIZE}px; float: left; }</style></header><body>`);
 		fs.writeSync(htmlMap, `<canvas id="canvas" width="${CALC_DOC_WIDTH}" height="${CALC_DOC_HEIGHT}"></canvas>`);
 		fs.writeSync(htmlMap, '<script type="text/javascript">');
 
@@ -436,7 +482,7 @@ class MapGenerator {
 				if(dataPoint.depth > 0) {
 					if(dataPoint.depth % 2 === 0) {
 						if(dataPoint.depth > 7) {
-							hex = '#cccc44';
+							hex = '#cc7733';
 						} else {
 							hex = '#cccccc';
 						}
@@ -486,8 +532,11 @@ class MapGenerator {
 			}
 
 			if(dataPoint.land) {
-				hex = moistureColorKey[dataPoint.moisture];
+				//hex = moistureColorKey[dataPoint.moisture];
 				//hex = temperatureColorKey[dataPoint.temperature];
+			}
+			if(dataPoint.special) {
+				hex = '#77ff99';
 			}
 
 			varData += `{'color': '${hex}', x: ${x}, y: ${y}},`;
