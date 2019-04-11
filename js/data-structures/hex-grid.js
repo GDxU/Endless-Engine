@@ -669,7 +669,9 @@ class HexGrid {
 				const nghbrCoords = metaPoint[dir];
 
 				if(nghbrCoords) {
-					const nghbrPoint = this.getPoint(nghbrCoords.x, nghbrCoords.y);
+					let nghbrPoint = this.getPoint(nghbrCoords.x, nghbrCoords.y);
+
+					nghbrPoint = this.filterPoint(nghbrPoint, nghbrCoords.x, nghbrCoords.y);
 
 					if( nghbrPoint ) {
 						count++;
@@ -682,7 +684,7 @@ class HexGrid {
 				inside: (point && count === 6),
 				numNeighbors: count
 			});
-		});
+		}, false);
 
 		return this;
 	}
@@ -697,7 +699,7 @@ class HexGrid {
 		// label all "0" points elev:0, then everything with 100% neighboring elev:0 becomes -1
 	}
 
-	grow(chance = 50) {
+	grow(chance = 50, additionalOperation) {
 		const percentChance = chance / 100;
 
 		this.copyToScratch();
@@ -714,6 +716,10 @@ class HexGrid {
 
 						if( nghbrCoords && Math.random() < percentChance ) {
 							this.setPoint(nghbrCoords.x, nghbrCoords.y, 1);
+
+							if( additionalOperation ) {
+								additionalOperation(nghbrCoords.x, nghbrCoords.y, this);
+							}
 						}
 					});
 				}
@@ -969,7 +975,7 @@ class HexGrid {
 				const key = `${nghbr.x}-${nghbr.y}`;
 
 				if( this.hasInternalPoint(nghbr.x, nghbr.y) && !visited[key] ) {
-					this.setPoint(nghbr.x, nghbr.y, 1);
+					//this.setPoint(nghbr.x, nghbr.y, 1);
 
 					pointSet = true;
 					visited[key] = true;

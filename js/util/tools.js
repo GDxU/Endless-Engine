@@ -15,7 +15,7 @@ const hexToRgb = (hex) => {
 };
 
 const getGradiatedColors = (hexA, hexB, steps) => {
-	const adjDist = steps - 2;
+	const adjDist = steps - 1;
 	const rgbA = hexToRgb(hexA);
 	const rgbB = hexToRgb(hexB);
 	const key = [];
@@ -24,8 +24,6 @@ const getGradiatedColors = (hexA, hexB, steps) => {
 		g: (rgbA.g - rgbB.g) / adjDist,
 		b: (rgbA.b - rgbB.b) / adjDist
 	};
-
-	key.push(hexA);
 
 	for(let i = 0; i < adjDist; i++) {
 		const stepValues = {

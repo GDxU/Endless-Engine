@@ -83,10 +83,13 @@ class MapGenerator {
 
 		this.seedContinents();
 
-		/*
 		let landDepth = 1;
 		while(true) {
-			if( !this.setLandDepth(landDepth) ) {
+			const test = dataPoint => {
+				return dataPoint.land
+			};
+
+			if( !this.setDepths(landDepth, test)) {
 				break;
 			}
 
@@ -94,12 +97,17 @@ class MapGenerator {
 		}
 
 		for(let d = 1; d < 6; d++) {
-			this.setWaterDepth(d);
+			const test = dataPoint => {
+				return !dataPoint.land;
+			};
+
+			this.setDepths(d, test);
 		}
-		*/
+
 		this.setTemperature();
 
-		// TODO: potentially add test during ring generation so it can be interrupted
+		/*
+		// Setting depths using getRing
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
 			const landTest = dataPoint => {
 				return (dataPoint.land === true);
@@ -140,9 +148,10 @@ class MapGenerator {
 				depth: radius - 1,
 			});
 		});
+		*/
 
 		// NOTE: ridge line should dip in some places to form series of peaks
-		/*
+
 		let successes = 0;
 		this.grid.eachPointRandom((point, randX, randY, self) => {
 			const randDataPoint = self.getDataPoint(randX, randY);
@@ -153,26 +162,90 @@ class MapGenerator {
 
 					return (dataPoint && dataPoint.land === true);
 				});
-				console.log("rays", rays);
-				Object.values(rays).forEach(ray => {
-					ray.forEach(({x, y}) => {
-						self.setPoint(x, y, 1);
+				let longestDir = {
+					length: 0,
+					dir: false
+				};
+				Object.entries(rays).forEach(([dir, rayPoints]) => {
+					if(rayPoints.length > longestDir.length) {
+						longestDir = {
+							dir,
+							length: rayPoints.length
+						};
+					}
+					/*
+					rayPoints.forEach(({x, y}) => {
 						self.setDataPoint(x, y, {special: true});
 					});
-				});
-				const path = self.getWindingPath(randX, randY, {maxLength: 100, startDir: 'n'});
-
-				path.forEach(({x, y}) => {
-					//self.setPoint(x, y, 1);
-					//self.setDataPoint(x, y, {special: true});
+					*/
 				});
 
-				if( ++successes >= 5) {
+				const path = self.getWindingPath(randX, randY, {maxLength: 150, startDir: longestDir.dir});
+				const minLandLength = 60;
+				if(path.length < minLandLength) {
+					return;
+				}
+
+				for(let i = 0; i < minLandLength; i++) {
+					const {x, y} = path[i];
+					const dataPoint = self.getDataPoint(x, y);
+
+					if(!dataPoint.land || dataPoint.mountain) {
+						return;
+					}
+				}
+				for(let i = 0; i < path.length; i++) {
+					const {x, y} = path[i];
+					const dataPoint = self.getDataPoint(x, y);
+
+					if(!dataPoint.land || dataPoint.mountain) {
+						if(++successes >= 4) {
+							return true;
+						}
+
+						return;
+					}
+
+					self.setDataPoint(x, y, {special2: true, mountain: true});
+					if( Math.random() > 0.86 ) {
+						self.setDataPoint(x, y, {special3: true, peak: true});
+					}
+				}
+
+				if(++successes >= 4) {
 					return true;
 				}
 			}
 		});
+
+
+		/*
+		// Mountain base growing. Probably unneeded
+		this.grid.addFilter((point, x, y) => {
+			const dataPoint = this.grid.getDataPoint(x, y);
+
+			if(dataPoint.special2) {
+				return point;
+			}
+
+			return false;
+		});
+
+		const special2GrowAction = (x, y, self) => {
+			self.setDataPoint(x, y, {
+				special2: true
+			});
+		};
+		this.grid.refresh().grow(35, special2GrowAction).refresh().grow(60, special2GrowAction).refresh().grow(40, special2GrowAction).clearFilter();
 		*/
+
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			if(dataPoint.peak) {
+				this.setPointElevation(x, y, 12, (ringDataPoint, ringTargetElevation) => {
+					return (ringDataPoint && !ringDataPoint.peak && ringDataPoint.elevation < ringTargetElevation);
+				});
+			}
+		});
 
 		/*
 		while(successes < 4) {
@@ -201,6 +274,42 @@ class MapGenerator {
 
 		return this.grid;
 	}
+	setPointElevation(centerX, centerY, targetElev, test) {
+		this.grid.setDataPoint(centerX, centerY, {
+			elevation: targetElev
+		});
+
+		let radius = 1;
+
+		while(true) {
+			let adjustedRing = 0;
+			const ringTargetElevation = targetElev - radius;
+			const ring = this.grid.getRing(centerX, centerY, radius);
+
+			ring.forEach(({x, y}) => {
+				const ringDataPoint = this.grid.getDataPoint(x, y);
+
+				if( test(ringDataPoint, ringTargetElevation) ) {
+					this.grid.setDataPoint(x, y, {
+						elevation: ringTargetElevation,
+						land: true
+					});
+					this.grid.setPoint(x, y, 1);
+
+					adjustedRing = true;
+				}
+			});
+
+			if(!adjustedRing) {
+				break;
+			}
+			if(radius > 8) {
+				break;
+			}
+
+			radius++;
+		}
+	}
 	seedContinents() {
 		// Ice Caps
 		{
@@ -212,7 +321,7 @@ class MapGenerator {
 			});
 		}
 		// Continents
-		const BIG_SIZES = [4000, 4000, 3500, 3200, 2600];
+		const BIG_SIZES = [5000, 4000, 4000, 3200, 3000, 2600];
 		for(let i = 0; i < BIG_SIZES.length; i++) {
 			const randStart = this.grid.getRandomPoint({x: 0, y: Math.ceil(this.height * 0.32)}, {x: this.width - 1, y: Math.floor(this.height * 0.68)});
 			const path = this.grid.getBlobShape(randStart.x, randStart.y, BIG_SIZES[i]);
@@ -222,9 +331,17 @@ class MapGenerator {
 			});
 		}
 
-		const SIZES = [2500, 2000, 1600, 1200, 900, 900, 900, 900, 700, 500, 300, 300, 300, 300, 300, 200, 200];
+		const SIZES = [2500, 2000, 1600, 1200, 900, 900, 900, 900, 900, 900, 700, 500, 500, 300, 300, 200, 200, 50, 50, 50, 50, 40, 40, 20, 20, 20, 20, 20, 20, 20];
 		for(let i = 0; i < SIZES.length; i++) {
-			const randStart = this.grid.getRandomPoint({x: 0, y: Math.ceil(this.height * 0.1)}, {x: this.width - 1, y: Math.floor(this.height * 0.9)});
+			//const randStart = this.grid.getRandomPoint({x: 0, y: Math.ceil(this.height * 0.13)}, {x: this.width - 1, y: Math.floor(this.height * 0.87)});
+			let randStart;
+			while(true) {
+				randStart = this.grid.getRandomPoint({x: 0, y: Math.ceil(this.height * 0.13)}, {x: this.width - 1, y: Math.floor(this.height * 0.87)});
+
+				if( !this.grid.getPoint(randStart.x, randStart.y) ) {
+					break;
+				}
+			}
 			const path = this.grid.getBlobShape(randStart.x, randStart.y, SIZES[i]);
 
 			path.forEach(({x, y}) => {
@@ -343,11 +460,11 @@ class MapGenerator {
 		});
 		*/
 	}
-	setLandDepth(depth) {
+	setDepths(depth, test) {
 		const sinkPoints = [];
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
-			if(!dataPoint.land) {
+			if(!test(dataPoint)) {
 				return;
 			}
 			if(dataPoint.depth === depth - 1) {
@@ -361,7 +478,7 @@ class MapGenerator {
 					if(nghbrCoords) {
 						const nghbrData = self.getDataPoint(nghbrCoords.x, nghbrCoords.y);
 
-						if(!nghbrData.land || nghbrData.depth !== depth - 1) {
+						if(!test(nghbrData) || nghbrData.depth !== depth - 1) {
 							valid = false;
 							break;
 						}
@@ -381,43 +498,6 @@ class MapGenerator {
 		});
 
 		return sinkPoints.length;
-	}
-	setWaterDepth(depth) {
-		const sinkPoints = [];
-
-		this.grid.eachDataPoint((dataPoint, x, y, self) => {
-			if(dataPoint.land) {
-				return;
-			}
-			if(dataPoint.depth === depth - 1) {
-				let valid = true;
-				const metaPoint = self.getMetaPoint(x, y);
-
-				for(let i = 0, len = HEX_DIRECTIONS.length; i < len; i++) {
-					const dir = HEX_DIRECTIONS[i];
-					const nghbrCoords = metaPoint[dir];
-
-					if(nghbrCoords) {
-						const nghbrData = self.getDataPoint(nghbrCoords.x, nghbrCoords.y);
-
-						if(nghbrData.land || nghbrData.depth !== depth - 1) {
-							valid = false;
-							break;
-						}
-					}
-				}
-
-				if(valid) {
-					sinkPoints.push({x, y});
-				}
-			}
-		});
-
-		sinkPoints.forEach(({x, y}) => {
-			this.grid.setDataPoint(x, y, {
-				depth
-			})
-		});
 	}
 	setElevation() {
 		const waterDepthElevationKey = [
@@ -478,6 +558,9 @@ class MapGenerator {
 		*/
 		const temperatureColorKey = getGradiatedColors('#335577', '#ee9977', 101);
 		const moistureColorKey = getGradiatedColors('#eeaa77', '#55dd88', 101);
+		//const elevationColorKey = getGradiatedColors('#47995a', '#995d47', 10);
+		const elevationColorKey = [...getGradiatedColors('#47995a', '#cee522', 6), ...getGradiatedColors('#e8d122', '#e26f22', 6)];
+		console.log(elevationColorKey);
 
 		fs.writeSync(htmlMap, `<html><header><title>Visual Map</title><style type="text/css">body { background: black; width: ${CALC_DOC_WIDTH}; } canvas { border-width: 0; border-style: solid; border-color: white; margin-top: calc(${CALC_DOC_HEIGHT}px * -0.19); transform: scale(1, 0.62); } .box { width: ${VIS_TILE_SIZE}px; height: ${VIS_TILE_SIZE}px; float: left; }</style></header><body>`);
 		fs.writeSync(htmlMap, `<canvas id="canvas" width="${CALC_DOC_WIDTH}" height="${CALC_DOC_HEIGHT}"></canvas>`);
@@ -488,7 +571,7 @@ class MapGenerator {
 		this.grid.eachPoint((point, x, y, self) => {
 			const metaPoint = self.getMetaPoint(x, y);
 			const dataPoint = self.getDataPoint(x, y);
-			let hex = '#3354a9';
+			let hex = '#ffffff';
 
 			if(point) {
 				if(dataPoint.depth === 0) {
@@ -555,6 +638,17 @@ class MapGenerator {
 			}
 			if(dataPoint.special) {
 				hex = '#77ff99';
+			}
+			if(dataPoint.special2) {
+				hex = '#db230f';
+			}
+			if(dataPoint.special3) {
+				hex = '#ffae00';
+			}
+			//hex = '#9988ff';
+
+			if(dataPoint.land) {
+				hex = elevationColorKey[dataPoint.elevation];
 			}
 
 			varData += `{'color': '${hex}', x: ${x}, y: ${y}},`;
