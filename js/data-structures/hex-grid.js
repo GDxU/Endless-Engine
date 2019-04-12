@@ -12,7 +12,8 @@ class HexGrid {
 		this.meta = [];
 		this.data = [];
 		this.pointFilter = false;
-		this.wrap = Boolean( config.wrap );
+		this.wrapX = Boolean( config.wrapX );
+		this.wrapY = Boolean( config.wrapY );
 		this.hasMeta = !( config.meta === false );
 		this.hasScratch = !( config.scratch === false );
 		this.hasData = !( config.data === false );
@@ -452,28 +453,32 @@ class HexGrid {
 			throw new Error('Grid y-coordinate must be an integer');
 		}
 
-		let outOfBounds = false;
+		let outOfBoundsX;
+		let outOfBoundsY;
 
 		// Offset each value by grid width/height until value is within grid boundaries.
 		while( x < 0 ) {
 			x += this.width;
-			outOfBounds = true;
+			outOfBoundsX = true;
 		}
 		while( x >= this.width ) {
 			x -= this.width;
-			outOfBounds = true;
+			outOfBoundsX = true;
 		}
 		while( y < 0 ) {
 			y += this.height;
-			outOfBounds = true;
+			outOfBoundsY = true;
 		}
 		while( y >= this.height ) {
 			y -= this.height;
-			outOfBounds = true;
+			outOfBoundsY = true;
 		}
 
-		// Check if coordinate falls outside grid and this.wrap has not been enabled
-		if( outOfBounds && !this.wrap ) {
+		// Check if coordinate falls outside grid and wrapping has not been enabled
+		if( outOfBoundsX && !this.wrapX ) {
+			return false;
+		}
+		if( outOfBoundsY && !this.wrapY ) {
 			return false;
 		}
 

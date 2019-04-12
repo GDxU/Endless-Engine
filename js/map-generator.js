@@ -71,7 +71,7 @@ class MapGenerator {
 			data: true,
 			meta: true,
 			scratch: true,
-			wrap: true
+			wrapX: true
 		}, createDataExemplar);
 
 		/*
@@ -150,17 +150,15 @@ class MapGenerator {
 		});
 		*/
 
-		// NOTE: ridge line should dip in some places to form series of peaks
-
 		let successes = 0;
 		this.grid.eachPointRandom((point, randX, randY, self) => {
 			const randDataPoint = self.getDataPoint(randX, randY);
 
-			if(randDataPoint.land && randDataPoint.depth >= 12) {
+			if(randDataPoint.land && randDataPoint.depth >= 8) {
 				const rays = self.castRays(randX, randY, (x, y) => {
 					const dataPoint = self.getDataPoint(x, y);
 
-					return (dataPoint && dataPoint.land === true);
+					return (dataPoint && dataPoint.land && !dataPoint.mountain);
 				});
 				let longestDir = {
 					length: 0,
@@ -180,8 +178,17 @@ class MapGenerator {
 					*/
 				});
 
-				const path = self.getWindingPath(randX, randY, {maxLength: 150, startDir: longestDir.dir});
-				const minLandLength = 60;
+				const path = self.getWindingPath(randX, randY, {maxLength: 160, startDir: longestDir.dir});
+				const minLandLength = 50;
+				const peakPoints = [];
+				const setPeakRanks = (peakPoints, self) => {
+					peakPoints.forEach(({x, y}, i) => {
+						const peakPosition = i < peakPoints.length / 2 ? i + 1 : peakPoints.length - i;
+
+						self.setDataPoint(x, y, {peak: peakPosition});
+					});
+				};
+
 				if(path.length < minLandLength) {
 					return;
 				}
@@ -190,7 +197,7 @@ class MapGenerator {
 					const {x, y} = path[i];
 					const dataPoint = self.getDataPoint(x, y);
 
-					if(!dataPoint.land || dataPoint.mountain) {
+					if(!dataPoint.land || dataPoint.mountain || dataPoint.depth < 6) {
 						return;
 					}
 				}
@@ -199,20 +206,27 @@ class MapGenerator {
 					const dataPoint = self.getDataPoint(x, y);
 
 					if(!dataPoint.land || dataPoint.mountain) {
-						if(++successes >= 4) {
+						setPeakRanks(peakPoints, self);
+
+						if(++successes >= 5) {
 							return true;
 						}
 
 						return;
 					}
 
-					self.setDataPoint(x, y, {special2: true, mountain: true});
-					if( Math.random() > 0.86 ) {
-						self.setDataPoint(x, y, {special3: true, peak: true});
+					self.setDataPoint(x, y, {mountain: true});
+
+					if( Math.random() > 0.3 ) {
+						self.setDataPoint(x, y, {peak: true});
+
+						peakPoints.push({x, y});
 					}
 				}
 
-				if(++successes >= 4) {
+				setPeakRanks(peakPoints, self);
+
+				if(++successes >= 5) {
 					return true;
 				}
 			}
@@ -241,11 +255,23 @@ class MapGenerator {
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
 			if(dataPoint.peak) {
-				this.setPointElevation(x, y, 12, (ringDataPoint, ringTargetElevation) => {
-					return (ringDataPoint && !ringDataPoint.peak && ringDataPoint.elevation < ringTargetElevation);
-				});
+				//const peakHeight = 7 + Math.ceil(Math.random() * 5);
+				let peakHeight = 6 + Math.floor(dataPoint.peak * 0.15);
+
+				if(peakHeight >= 8) {
+					peakHeight = 4 + Math.ceil(Math.random() * 8);
+				}
+				const peakDataPoint = self.getDataPoint(x, y);
+
+				if(peakDataPoint.elevation <= peakHeight && peakDataPoint.depth >= peakHeight) {
+					this.setPointElevation(x, y, peakHeight, (ringDataPoint, ringTargetElevation) => {
+						return (ringDataPoint && ringDataPoint.elevation < ringTargetElevation && ringDataPoint.land && ringDataPoint.depth >= ringTargetElevation);//&& !ringDataPoint.peak
+					});
+				}
 			}
 		});
+
+		// TODO: erode mountains/hills near coast. Look at tile.depth values and make adjustments
 
 		/*
 		while(successes < 4) {
@@ -280,18 +306,25 @@ class MapGenerator {
 		});
 
 		let radius = 1;
+		let spread = 0;
 
 		while(true) {
 			let adjustedRing = 0;
-			const ringTargetElevation = targetElev - radius;
+			const ringTargetElevation = targetElev - radius + spread;// - Math.round(Math.random());
 			const ring = this.grid.getRing(centerX, centerY, radius);
 
 			ring.forEach(({x, y}) => {
 				const ringDataPoint = this.grid.getDataPoint(x, y);
 
 				if( test(ringDataPoint, ringTargetElevation) ) {
+					let finalElevation = ringTargetElevation - Math.round(Math.random());
+
+					if(finalElevation < 0) {
+						finalElevation = 0;
+					}
+
 					this.grid.setDataPoint(x, y, {
-						elevation: ringTargetElevation,
+						elevation: finalElevation,
 						land: true
 					});
 					this.grid.setPoint(x, y, 1);
@@ -300,10 +333,14 @@ class MapGenerator {
 				}
 			});
 
+			if(Math.random() > 0.7) {
+				spread++;
+			}
+
 			if(!adjustedRing) {
 				break;
 			}
-			if(radius > 8) {
+			if(radius > 30) {
 				break;
 			}
 
@@ -559,8 +596,7 @@ class MapGenerator {
 		const temperatureColorKey = getGradiatedColors('#335577', '#ee9977', 101);
 		const moistureColorKey = getGradiatedColors('#eeaa77', '#55dd88', 101);
 		//const elevationColorKey = getGradiatedColors('#47995a', '#995d47', 10);
-		const elevationColorKey = [...getGradiatedColors('#47995a', '#cee522', 6), ...getGradiatedColors('#e8d122', '#e26f22', 6)];
-		console.log(elevationColorKey);
+		const elevationColorKey = [...getGradiatedColors('#47995a', '#cee522', 5), ...getGradiatedColors('#e8d122', '#e26f22', 7)];
 
 		fs.writeSync(htmlMap, `<html><header><title>Visual Map</title><style type="text/css">body { background: black; width: ${CALC_DOC_WIDTH}; } canvas { border-width: 0; border-style: solid; border-color: white; margin-top: calc(${CALC_DOC_HEIGHT}px * -0.19); transform: scale(1, 0.62); } .box { width: ${VIS_TILE_SIZE}px; height: ${VIS_TILE_SIZE}px; float: left; }</style></header><body>`);
 		fs.writeSync(htmlMap, `<canvas id="canvas" width="${CALC_DOC_WIDTH}" height="${CALC_DOC_HEIGHT}"></canvas>`);
@@ -635,6 +671,7 @@ class MapGenerator {
 			if(dataPoint.land) {
 				//hex = moistureColorKey[dataPoint.moisture];
 				//hex = temperatureColorKey[dataPoint.temperature];
+				hex = elevationColorKey[dataPoint.elevation];
 			}
 			if(dataPoint.special) {
 				hex = '#77ff99';
@@ -646,10 +683,6 @@ class MapGenerator {
 				hex = '#ffae00';
 			}
 			//hex = '#9988ff';
-
-			if(dataPoint.land) {
-				hex = elevationColorKey[dataPoint.elevation];
-			}
 
 			varData += `{'color': '${hex}', x: ${x}, y: ${y}},`;
 		});
