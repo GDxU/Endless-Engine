@@ -151,10 +151,11 @@ class MapGenerator {
 		*/
 
 		let successes = 0;
+		const maxSuccesses = 15;
 		this.grid.eachPointRandom((point, randX, randY, self) => {
 			const randDataPoint = self.getDataPoint(randX, randY);
 
-			if(randDataPoint.land && randDataPoint.depth >= 8) {
+			if(randDataPoint.land && randDataPoint.depth >= 3) {
 				const rays = self.castRays(randX, randY, (x, y) => {
 					const dataPoint = self.getDataPoint(x, y);
 
@@ -171,19 +172,20 @@ class MapGenerator {
 							length: rayPoints.length
 						};
 					}
-					/*
-					rayPoints.forEach(({x, y}) => {
-						self.setDataPoint(x, y, {special: true});
-					});
-					*/
 				});
 
 				const path = self.getWindingPath(randX, randY, {maxLength: 160, startDir: longestDir.dir});
-				const minLandLength = 50;
+				const minLandLength = 16;
 				const peakPoints = [];
 				const setPeakRanks = (peakPoints, self) => {
 					peakPoints.forEach(({x, y}, i) => {
-						const peakPosition = i < peakPoints.length / 2 ? i + 1 : peakPoints.length - i;
+						let peakPosition = i < peakPoints.length / 2 ? i + 2 : peakPoints.length - i + 1;
+
+						peakPosition = Math.ceil(peakPosition * 0.25);
+
+						if(peakPosition > 9) {
+							peakPosition = 3 + Math.floor(Math.random() * 6);
+						}
 
 						self.setDataPoint(x, y, {peak: peakPosition});
 					});
@@ -208,7 +210,7 @@ class MapGenerator {
 					if(!dataPoint.land || dataPoint.mountain) {
 						setPeakRanks(peakPoints, self);
 
-						if(++successes >= 5) {
+						if(++successes >= maxSuccesses) {
 							return true;
 						}
 
@@ -226,15 +228,14 @@ class MapGenerator {
 
 				setPeakRanks(peakPoints, self);
 
-				if(++successes >= 5) {
+				if(++successes >= maxSuccesses) {
 					return true;
 				}
 			}
 		});
 
-
 		/*
-		// Mountain base growing. Probably unneeded
+		// Mountain base growing. Probably unneeded but shows use of grow extra action arg
 		this.grid.addFilter((point, x, y) => {
 			const dataPoint = this.grid.getDataPoint(x, y);
 
@@ -253,6 +254,8 @@ class MapGenerator {
 		this.grid.refresh().grow(35, special2GrowAction).refresh().grow(60, special2GrowAction).refresh().grow(40, special2GrowAction).clearFilter();
 		*/
 
+		/*
+		// Mountain Elevation v1
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
 			if(dataPoint.peak) {
 				//const peakHeight = 7 + Math.ceil(Math.random() * 5);
@@ -270,27 +273,36 @@ class MapGenerator {
 				}
 			}
 		});
-
-		// TODO: erode mountains/hills near coast. Look at tile.depth values and make adjustments
+		*/
 
 		/*
-		while(successes < 4) {
-			const randPoint = this.grid.getRandomPoint();
-			const randDataPoint = this.grid.getDataPoint(randPoint.x, randPoint.y);
+		// Random test peaks
+		let peaks = 0;
+		this.grid.eachPointRandom((point, x, y, self) => {
+			const dataPoint = self.getDataPoint(x, y);
 
-			if(randDataPoint.land && randDataPoint.depth >= 14) {
-				const path = this.grid.getWindingPath(randPoint.x, randPoint.y, 100);
-
-				path.forEach(({x, y}) => {
-					this.grid.setPoint(x, y, 1);
-					this.grid.setDataPoint(x, y, {special: true});
-				});
-
-				//break;
-				successes++;
+			if(dataPoint.land) {
+				this.grid.setDataPoint(x, y, {peak: 10});
+				peaks++;
 			}
-		}
+
+			if(peaks > 20) {
+				return true;
+			}
+		});
 		*/
+
+		this.setPeakElevations();
+
+		// go from elev 2 to 20
+		// for each "peak" point loop
+		// check if peak target/max elevation is less than "current" elevation level
+		// if so, do expanding rings outward gathering up points.
+		// if at any time any of those are invalid, entire peak point adjustment is invalid and stopped
+		// if failure: adjust peak value to be current elevation
+		// if num of affected tiles during entire elev sweep was not 0, continue
+		// when number of affected tiles == 0, stop
+
 
 		this.setElevation();
 		this.setMoisture();
@@ -299,6 +311,69 @@ class MapGenerator {
 		this.print();
 
 		return this.grid;
+	}
+	setPeakElevations() {
+		const maxElev = 10;
+		let currentElev = 2;
+		let numAffectedLastSweep = 1;
+
+		masterLoop:
+		while(numAffectedLastSweep && currentElev <= maxElev) {
+			numAffectedLastSweep = 0;
+
+			this.grid.eachDataPoint((dataPoint, x, y, self) => {
+				if(dataPoint.peak && (dataPoint.elevation < dataPoint.peak) && dataPoint.peak >= currentElev) {
+					const pointsToRaise = [];
+					let radius = 1;
+
+					ringLoop:
+					while(true) {
+						const ringElev = currentElev - radius;
+						const ring = self.getRing(x, y, radius);
+
+						for(let i = 0; i < ring.length; i++) {
+							const ringDataPoint = self.getDataPoint(ring[i].x, ring[i].y);
+
+							if(ringDataPoint.land) {
+								if(ringDataPoint.peak && ringDataPoint.peak < ringElev) {
+									pointsToRaise.push({x: ring[i].x, y: ring[i].y});
+								} else if(ringDataPoint.elevation < ringElev) {
+									pointsToRaise.push({x: ring[i].x, y: ring[i].y});
+								}
+							} else {
+								return;
+							}
+						}
+
+						numAffectedLastSweep += pointsToRaise.length + 1;
+
+						if(!pointsToRaise.length) {
+							break ringLoop;
+						}
+						if(radius >= currentElev - 1) {
+							break ringLoop;
+						}
+
+						radius++;
+					}
+
+					pointsToRaise.forEach(raisePoint => {
+						const ownHeight = self.getDataPoint(raisePoint.x, raisePoint.y).elevation;
+
+						self.setDataPoint(raisePoint.x, raisePoint.y, {
+							elevation: ownHeight + 1,
+							peak: false
+						});
+					});
+
+					self.setDataPoint(x, y, {
+						elevation: currentElev
+					});
+				}
+			});
+
+			currentElev++;
+		}
 	}
 	setPointElevation(centerX, centerY, targetElev, test) {
 		this.grid.setDataPoint(centerX, centerY, {
@@ -580,7 +655,7 @@ class MapGenerator {
 				hex = '#a0d070';
 
 				if(metaPoint.edge) {
-					hex = '#f09030'
+					hex = '#f09030';
 				}
 			}
 
