@@ -864,7 +864,7 @@ class HexGrid {
 		});
 	}
 
-	getRing(centerX, centerY, radius) {
+	getRing(centerX, centerY, radius = 1) {
 		const points = [];
 		const compass = new HexCompass();
 		const centerMetaPoint = this.getMetaPoint(centerX, centerY);
