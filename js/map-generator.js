@@ -106,7 +106,7 @@ class MapGenerator {
 			this.setDepths(d, test);
 		}
 
-		this.setTemperature();
+		this.setTemperatures();
 
 		/*
 		// Setting depths using getRing
@@ -208,100 +208,183 @@ class MapGenerator {
 
 		return this.grid;
 	}
+	detectAreas() {
+		const idLegend = {};
+		let idIndex = 1;
+		let loops = 0;
+		let pointsSet = 0;
+
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			if(dataPoint.areaID || !dataPoint.land) {
+				return;
+			}
+			let innerLoops = 0;
+
+			let testNext = [{x, y}];
+			const rootIsLand = dataPoint.land;
+
+			whileLoop:
+			while(testNext.length) {
+				const testCoords = {};
+
+				testNext.forEach(testCoord => {
+					const testDataPoint = self.getDataPoint(testCoord.x, testCoord.y);
+
+					if(!testDataPoint.areaID) {
+						const testMetaPoint = self.getMetaPoint(testCoord.x, testCoord.y);
+
+						HEX_DIRECTIONS.forEach(direction => {
+							const dirCoords = testMetaPoint[direction];
+
+							if(dirCoords) {
+								const dirDataPoint = self.getDataPoint(dirCoords.x, dirCoords.y);
+
+								if(!dirDataPoint.areaID && rootIsLand === dirDataPoint.land) {
+									const key = `${dirCoords.x}-${dirCoords.y}`;
+
+									if(!testCoords[key]) {
+										testCoords[key] = dirCoords;
+									}
+								}
+							}
+						});
+
+						self.setDataPoint(testCoord.x, testCoord.y, {
+							areaID: idIndex,
+							special3: true
+						});
+						//console.log("setting point", testCoord.x, testCoord.y);
+						pointsSet++;
+					}
+				});
+
+				testNext = Object.values(testCoords);
+			}
+
+			idIndex++;
+		});
+
+		console.log("last idIndex", idIndex);
+		console.log("pointsSet", pointsSet);
+	}
 	createRivers() {
 		let numRivers = 0;
 		const minRiverLength = 18;
-		const maxRiverLength = 50;
-		const maxNumRivers = 31;
-		const compass = new HexCompass();
+		const maxRiverLength = 46;
+		const maxNumRivers = 32;
+
+		const createRiverBranch = (x, y, config, self) => {
+			const {isBranch, minRiverLength, maxRiverLength, maxNumRivers} = config;
+			const riverPoints = {};
+			let currentCoords = {x, y};
+			let prevDirection;
+			let numSameDirs = 0;
+			const compass = new HexCompass();
+
+			while(true) {
+				const currentDataPoint = self.getDataPoint(currentCoords.x, currentCoords.y);
+
+				riverPoints[`${currentCoords.x}-${currentCoords.y}`] = currentCoords;
+
+				const ring = self.getRing(currentCoords.x, currentCoords.y);
+				const nextPossible = {};
+				const ringKey = {};
+
+				ring.forEach((ringCoords, i) => {
+					ringKey[HEX_DIRECTIONS[i]] = ringCoords;
+				});
+
+				ring.forEach((ringCoords, i) => {
+					const ringDataPoint = self.getDataPoint(ringCoords.x, ringCoords.y);
+					const key = `${ringCoords.x}-${ringCoords.y}`;
+					const testDirection = HEX_DIRECTIONS[i];
+
+					if(ringDataPoint && ringDataPoint.land && ringDataPoint.depth >= currentDataPoint.depth && !riverPoints[key] && !ringDataPoint.river) {
+						compass.dir = testDirection;
+
+						const {left, right} = compass.adjacent;
+						const leftKey = `${ringKey[left].x}-${ringKey[left].y}`;
+						const rightKey = `${ringKey[right].x}-${ringKey[right].y}`;
+						let acceptableDirection;
+
+						if(!riverPoints[leftKey] && !riverPoints[rightKey]) {
+							const waterTestRing = self.getRing(ringCoords.x, ringCoords.y);
+							let waterAdjacent;
+
+							waterLoop:
+							for(let w = 0; w < waterTestRing.length; w++) {
+								const waterTestCoords = waterTestRing[w];
+								const waterTestDataPoint = self.getDataPoint(waterTestCoords.x, waterTestCoords.y);
+
+								if(!waterTestDataPoint.land || waterTestDataPoint.river) {
+									waterAdjacent = true;
+
+									break waterLoop;
+								}
+							}
+
+							if(!waterAdjacent) {
+								nextPossible[testDirection] = {x: ringCoords.x, y: ringCoords.y};
+							}
+						}
+					}
+				});
+
+				if(Object.values(nextPossible).length) {
+					if(numSameDirs >= 2) {
+						delete nextPossible[prevDirection];
+
+						numSameDirs = 0;
+					}
+					if(Object.values(nextPossible).length) {
+						const dirKey = Object.keys(nextPossible).randomize().pop();
+
+						if(dirKey === prevDirection) {
+							numSameDirs++;
+						}
+
+						currentCoords = nextPossible[dirKey];
+						prevDirection = dirKey;
+					} else {
+						break;
+					}
+				} else {
+					break;
+				}
+
+				if(Object.values(riverPoints).length >= maxRiverLength) {
+					break;
+				}
+			}
+
+			const finalPoints = Object.values(riverPoints);
+
+			if(finalPoints.length >= minRiverLength) {
+				finalPoints.forEach(riverPoint => {
+					self.setDataPoint(riverPoint.x, riverPoint.y, {
+						river: true,
+						special2: true
+					});
+				});
+
+				if(!isBranch) {
+					numRivers++;
+				}
+				if(!isBranch && finalPoints.length > 24) {
+					createRiverBranch(finalPoints[20].x, finalPoints[20].y, {isBranch: true, minRiverLength: 8, maxRiverLength: 20, maxNumRivers: 1}, self);
+				}
+			}
+
+			if(numRivers >= maxNumRivers) {
+				return true;
+			}
+		};
 
 		this.grid.eachPointRandom((point, x, y, self) => {
 			const dataPoint = self.getDataPoint(x, y);
 
-			if(dataPoint.land && dataPoint.depth === 0) {
-				const riverPoints = {};
-				let currentCoords = {x, y};
-				let prevDirection;
-				let numSameDirs = 0;
-
-				while(true) {
-					const currentDataPoint = self.getDataPoint(currentCoords.x, currentCoords.y);
-
-					riverPoints[`${currentCoords.x}-${currentCoords.y}`] = currentCoords;
-
-					const ring = self.getRing(currentCoords.x, currentCoords.y);
-					const nextPossible = {};
-					//const nextPossible = [];
-					const ringKey = {};
-
-					ring.forEach((ringCoords, i) => {
-						ringKey[HEX_DIRECTIONS[i]] = ringCoords;
-					});
-
-					ring.forEach((ringCoords, i) => {
-						const ringDataPoint = self.getDataPoint(ringCoords.x, ringCoords.y);
-						const key = `${ringCoords.x}-${ringCoords.y}`;
-						const testDirection = HEX_DIRECTIONS[i];
-
-						if(ringDataPoint && ringDataPoint.land && ringDataPoint.depth >= currentDataPoint.depth && !riverPoints[key] && !ringDataPoint.river) {
-							compass.dir = testDirection;
-
-							const {left, right} = compass.adjacent;
-							const leftKey = `${ringKey[left].x}-${ringKey[left].y}`;
-							const rightKey = `${ringKey[right].x}-${ringKey[right].y}`;
-							let acceptableDirection;
-
-							if(!riverPoints[leftKey] && !riverPoints[rightKey]) {
-								nextPossible[testDirection] = {x: ringCoords.x, y: ringCoords.y};
-								//nextPossible.push({x: ringCoords.x, y: ringCoords.y});
-							}
-						}
-					});
-
-					if(Object.values(nextPossible).length) {
-						if(numSameDirs >= 3) {
-							delete nextPossible[prevDirection];
-
-							numSameDirs = 0;
-						}
-						if(Object.values(nextPossible).length) {
-							const dirKey = Object.keys(nextPossible).randomize().pop();
-
-							if(dirKey === prevDirection) {
-								numSameDirs++;
-							}
-
-							currentCoords = nextPossible[dirKey];
-							prevDirection = dirKey;
-						} else {
-							break;
-						}
-
-
-						//currentCoords = Object.values(nextPossible).randomize().pop();
-					} else {
-						break;
-					}
-
-					if(Object.values(riverPoints).length >= maxRiverLength) {
-						break;
-					}
-				}
-
-				if(Object.values(riverPoints).length >= minRiverLength) {
-					Object.values(riverPoints).forEach(riverPoint => {
-						self.setDataPoint(riverPoint.x, riverPoint.y, {
-							river: true,
-							special2: true
-						});
-					});
-
-					numRivers++;
-				}
-
-				if(numRivers >= maxNumRivers) {
-					return true;
-				}
+			if(dataPoint.land && dataPoint.depth === 0 && dataPoint.temperature > 12) {
+				return createRiverBranch(x, y, {minRiverLength, maxRiverLength, maxNumRivers}, self);
 			}
 		});
 	}
@@ -592,11 +675,6 @@ class MapGenerator {
 			}
 		});
 	}
-	detectAreas() {
-		// space filling routine to detect each distinct land mass and body of water
-		// declare inland(?) water bodies as fresh water
-		// do osmething similar for mountains..?
-	}
 	setMoisture() {
 		const halfGlobeWidth = this.height * 0.5;
 		const poleWidth = halfGlobeWidth * 0.25;
@@ -633,7 +711,7 @@ class MapGenerator {
 			self.setDataPoint(x, y, {moisture});
 		});
 	}
-	setTemperature() {
+	setTemperatures() {
 		const poleBuffer = 8;
 		const halfHeight = this.height * 0.5;
 		const slope = 100 / (halfHeight - poleBuffer);
