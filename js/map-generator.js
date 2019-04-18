@@ -85,13 +85,17 @@ class MapGenerator {
 		this.seedContinents();
 		this.detectAreas();
 
+		// Land depths
 		let landDepth = 1;
 		while(true) {
 			const test = dataPoint => {
-				return dataPoint.land
+				return dataPoint.land;
+			};
+			const passthrough = dataPoint => {
+				return dataPoint.freshwater;
 			};
 
-			if( !this.setDepths(landDepth, test)) {
+			if(!this.setDepths(landDepth, test, passthrough)) {
 				break;
 			}
 
@@ -202,6 +206,18 @@ class MapGenerator {
 		this.createRivers();
 		this.setWaterElevation();
 		this.setMoisture();
+		const test = this.detectAreaRecursively(0, 0, dataPoint => {
+			return dataPoint.land;
+		}, this.grid);
+		const test2 = Object.values(test.ownPoints);
+		console.log("test", test, test2.length);
+
+
+		test2.forEach(({x, y}) => {
+			this.grid.setDataPoint(x, y, {
+				special3: true
+			});
+		});
 
 
 		this.print();
@@ -209,13 +225,14 @@ class MapGenerator {
 		return this.grid;
 	}
 	detectAreas() {
-		const idLegend = {};
+		const legend = {
+			land: {},
+			water: {}
+		};
 		let idIndex = 1;
-		let loops = 0;
-		let pointsSet = 0;
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
-			if(dataPoint.areaID || !dataPoint.land) {
+			if(dataPoint.areaID) {
 				return;
 			}
 			let innerLoops = 0;
@@ -250,11 +267,16 @@ class MapGenerator {
 						});
 
 						self.setDataPoint(testCoord.x, testCoord.y, {
-							areaID: idIndex,
-							special3: true
+							areaID: idIndex
 						});
-						//console.log("setting point", testCoord.x, testCoord.y);
-						pointsSet++;
+
+						const legendTypeKey = testDataPoint.land ? 'land' : 'water';
+
+						if(!legend[legendTypeKey][idIndex]) {
+							legend[legendTypeKey][idIndex] = 0;
+						}
+
+						legend[legendTypeKey][idIndex] += 1;
 					}
 				});
 
@@ -263,9 +285,16 @@ class MapGenerator {
 
 			idIndex++;
 		});
+		console.log("legend", legend);
 
-		console.log("last idIndex", idIndex);
-		console.log("pointsSet", pointsSet);
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			if(!dataPoint.land && legend.water[dataPoint.areaID] < 300) {
+				self.setDataPoint(x, y, {
+					freshwater: true,
+					special6: true
+				});
+			}
+		});
 	}
 	createRivers() {
 		let numRivers = 0;
@@ -777,7 +806,60 @@ class MapGenerator {
 		});
 		*/
 	}
-	setDepths(depth, test) {
+	detectAreaRecursively(x, y, test, self, excludedPoints = {}, depth = 0) {
+		const dataPoint = self.getDataPoint(x, y);
+		const metaPoint = self.getMetaPoint(x, y);
+		const nextPoints = [];
+		let ownPoints = [{x, y}];
+		let failedPoints = [];
+
+		if(!Object.keys(excludedPoints).length) {
+			excludedPoints[`${x}-${y}`] = true;
+		}
+		if(depth > 20) {
+			return {
+				failedPoints: [{x, y}],
+				ownPoints: []
+			};
+		}
+
+		for(let i = 0, len = HEX_DIRECTIONS.length; i < len; i++) {
+			const dir = HEX_DIRECTIONS[i];
+			const nghbrCoords = metaPoint[dir];
+
+			if(nghbrCoords) {
+				const nghbrData = self.getDataPoint(nghbrCoords.x, nghbrCoords.y);
+				const key = `${nghbrCoords.x}-${nghbrCoords.y}`;
+
+				if(test(nghbrData) && !excludedPoints[key]) {
+					excludedPoints[key] = true;
+					nextPoints.push({x: nghbrCoords.x, y: nghbrCoords.y});
+				}
+			}
+		}
+
+		for(let i = 0; i < nextPoints.length; i++) {
+			const coord = nextPoints[i];
+			const results = this.detectAreaRecursively(coord.x, coord.y, test, self, excludedPoints, depth + 1);
+
+			if(!depth && results.failedPoints.length) {
+				for(let f = 0; f < results.failedPoints.length; f++) {
+					nextPoints.push(results.failedPoints[f]);
+				}
+			}
+			if(depth) {
+				failedPoints = [...failedPoints, ...results.failedPoints];
+			}
+
+			ownPoints = [...ownPoints, ...results.ownPoints];
+		}
+
+		return {
+			failedPoints,
+			ownPoints
+		};
+	}
+	setDepths(depth, test, passthrough = () => {}) {
 		const sinkPoints = [];
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
@@ -795,7 +877,7 @@ class MapGenerator {
 					if(nghbrCoords) {
 						const nghbrData = self.getDataPoint(nghbrCoords.x, nghbrCoords.y);
 
-						if(!test(nghbrData) || nghbrData.depth !== depth - 1) {
+						if((!test(nghbrData) || nghbrData.depth !== depth - 1) && !passthrough(nghbrData)) {
 							valid = false;
 							break;
 						}
@@ -951,7 +1033,7 @@ class MapGenerator {
 			if(dataPoint.land) {
 				//hex = moistureColorKey[dataPoint.moisture];
 				//hex = temperatureColorKey[dataPoint.temperature];
-				hex = elevationColorKey[dataPoint.elevation];
+				//hex = elevationColorKey[dataPoint.elevation];
 			}
 			if(dataPoint.special) {
 				hex = '#77ff99';
@@ -962,7 +1044,15 @@ class MapGenerator {
 			if(dataPoint.special3) {
 				hex = '#ffae00';
 			}
-			//hex = '#9988ff';
+			if(dataPoint.special4) {
+				hex = '#9988ff';
+			}
+			if(dataPoint.special5) {
+				hex = '#f591ff';
+			}
+			if(dataPoint.special6) {
+				hex = '#66e8ff';
+			}
 
 			varData += `{'color': '${hex}', x: ${x}, y: ${y}},`;
 		});
