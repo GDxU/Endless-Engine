@@ -94,8 +94,11 @@ class MapGenerator {
 			const passthrough = dataPoint => {
 				return dataPoint.freshwater;
 			};
+			const flood = dataPoint => {
+				return dataPoint.freshwater;
+			};
 
-			if(!this.setDepths(landDepth, test, passthrough)) {
+			if(!this.setDepths(landDepth, test, passthrough, flood)) {
 				break;
 			}
 
@@ -201,23 +204,12 @@ class MapGenerator {
 		});
 		*/
 
-		//this.createMountains();
-		//this.setPeakElevations();
+		this.createMountains();
+		this.setPeakElevations();
 		this.createRivers();
 		this.setWaterElevation();
 		this.setMoisture();
-		const test = this.detectAreaRecursively(0, 0, dataPoint => {
-			return dataPoint.land;
-		}, this.grid);
-		const test2 = Object.values(test.ownPoints);
-		console.log("test", test, test2.length);
-
-
-		test2.forEach(({x, y}) => {
-			this.grid.setDataPoint(x, y, {
-				special3: true
-			});
-		});
+		this.adjustMoistureFromElevation();
 
 
 		this.print();
@@ -392,16 +384,18 @@ class MapGenerator {
 				finalPoints.forEach(riverPoint => {
 					self.setDataPoint(riverPoint.x, riverPoint.y, {
 						river: true,
-						special2: true
+						special4: true
 					});
 				});
 
 				if(!isBranch) {
 					numRivers++;
 				}
+				/*
 				if(!isBranch && finalPoints.length > 24) {
 					createRiverBranch(finalPoints[20].x, finalPoints[20].y, {isBranch: true, minRiverLength: 8, maxRiverLength: 20, maxNumRivers: 1}, self);
 				}
+				*/
 			}
 
 			if(numRivers >= maxNumRivers) {
@@ -720,6 +714,7 @@ class MapGenerator {
 
 			switch(true) {
 				case y > band5:
+					moisture = 100 - Math.round(100 * (y - band5) / poleWidth);
 					break;
 				case y > band4:
 					moisture = Math.round(100 * (y - band4) / innerWidth);
@@ -734,10 +729,117 @@ class MapGenerator {
 					moisture = 100 - Math.round(100 * (y - band1) / innerWidth);
 					break;
 				default:
+					moisture = Math.round(100 * y / poleWidth);
 					break;
 			}
 
+			moisture += 20;
+
+			if(moisture > 100) {
+				moisture = 100;
+			}
+
 			self.setDataPoint(x, y, {moisture});
+		});
+	}
+	adjustMoistureFromElevation() {
+		const initialShadowPoints = [];
+		const edgePoints = [];
+		const edgeBlobPoints = [];
+
+		// Reduce moisture in areas west of mountains
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			if(dataPoint.mountain) {
+				let shadow = 3;
+
+				while(shadow < 50) {
+					const shadowX = x - shadow;
+					const offsetDataPoint = self.getDataPoint(shadowX, y);
+
+					if(!offsetDataPoint.land || offsetDataPoint.rainshadow) {
+						break;
+					}
+
+					self.setDataPoint(shadowX, y, {
+						rainshadow: true
+						//special2: true
+					});
+
+					initialShadowPoints.push({x: shadowX, y});
+
+					shadow++;
+				}
+			}
+		});
+
+		// Add irregularity to edges
+		this.grid.addFilter((point, x, y) => {
+			const dataPoint = this.grid.getDataPoint(x, y);
+
+			if(dataPoint.rainshadow) {
+				return point;
+			}
+
+			return false;
+		});
+
+		this.grid.refresh().eachPoint((point, x, y, self) => {
+			if(point) {
+				const metaPoint = self.getMetaPoint(x, y);
+
+				if(metaPoint.edge) {
+					const blobSize = 1 + Math.floor(Math.random() * 25);
+					const blob = self.getBlobShape(x, y, blobSize);
+
+					edgeBlobPoints.push(blob);
+				}
+			}
+		}, true).refresh();
+
+		edgeBlobPoints.forEach(blob => {
+			blob.forEach(({x, y}) => {
+				const dataPoint = this.grid.getDataPoint(x, y);
+
+				if(dataPoint.land) {
+					this.grid.setDataPoint(x, y, {
+						rainshadow: true
+					});
+				}
+			});
+		});
+
+		// ***TEMP
+		this.grid.addFilter((point, x, y) => {
+			const dataPoint = this.grid.getDataPoint(x, y);
+
+			if(dataPoint.rainshadow) {
+				return point;
+			}
+
+			return false;
+		});
+
+		this.grid.refresh().eachPoint((point, x, y, self) => {
+			if(point) {
+				const metaPoint = self.getMetaPoint(x, y);
+
+				if(metaPoint.edge) {
+					self.setDataPoint(x, y, {
+						special2: true
+					});
+				}
+			}
+		}, true).refresh();
+		// ***END TEMP
+
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			if(dataPoint.rainshadow) {
+				const calcMoisture = dataPoint.moisture - 25;
+
+				self.setDataPoint(x, y, {
+					moisture: calcMoisture < 0 ? 0 : calcMoisture
+				});
+			}
 		});
 	}
 	setTemperatures() {
@@ -806,14 +908,14 @@ class MapGenerator {
 		});
 		*/
 	}
-	detectAreaRecursively(x, y, test, self, excludedPoints = {}, depth = 0) {
-		const dataPoint = self.getDataPoint(x, y);
-		const metaPoint = self.getMetaPoint(x, y);
+	detectAreaRecursively(x, y, test, grid, excludedPoints = {}, depth = 0) {
+		const dataPoint = grid.getDataPoint(x, y);
+		const metaPoint = grid.getMetaPoint(x, y);
 		const nextPoints = [];
 		let ownPoints = [{x, y}];
 		let failedPoints = [];
 
-		if(!Object.keys(excludedPoints).length) {
+		if(!depth) {
 			excludedPoints[`${x}-${y}`] = true;
 		}
 		if(depth > 20) {
@@ -828,7 +930,7 @@ class MapGenerator {
 			const nghbrCoords = metaPoint[dir];
 
 			if(nghbrCoords) {
-				const nghbrData = self.getDataPoint(nghbrCoords.x, nghbrCoords.y);
+				const nghbrData = grid.getDataPoint(nghbrCoords.x, nghbrCoords.y);
 				const key = `${nghbrCoords.x}-${nghbrCoords.y}`;
 
 				if(test(nghbrData) && !excludedPoints[key]) {
@@ -840,7 +942,7 @@ class MapGenerator {
 
 		for(let i = 0; i < nextPoints.length; i++) {
 			const coord = nextPoints[i];
-			const results = this.detectAreaRecursively(coord.x, coord.y, test, self, excludedPoints, depth + 1);
+			const results = this.detectAreaRecursively(coord.x, coord.y, test, grid, excludedPoints, depth + 1);
 
 			if(!depth && results.failedPoints.length) {
 				for(let f = 0; f < results.failedPoints.length; f++) {
@@ -854,12 +956,16 @@ class MapGenerator {
 			ownPoints = [...ownPoints, ...results.ownPoints];
 		}
 
+		if(!depth) {
+			return ownPoints;
+		}
+
 		return {
 			failedPoints,
 			ownPoints
 		};
 	}
-	setDepths(depth, test, passthrough = () => {}) {
+	setDepths(depth, test, passthrough = () => {}, flood = () => {}) {
 		const sinkPoints = [];
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
@@ -877,12 +983,37 @@ class MapGenerator {
 					if(nghbrCoords) {
 						const nghbrData = self.getDataPoint(nghbrCoords.x, nghbrCoords.y);
 
+						/*
+						if(flood(nghbrData)) {
+							const floodPoints = this.detectAreaRecursively(nghbrCoords.x, nghbrCoords.y, flood, self);
+
+							floodPoints.forEach(({x, y}) => {
+								this.grid.setDataPoint(x, y, {
+									depth
+								});
+							});
+						}
+						*/
+
 						if((!test(nghbrData) || nghbrData.depth !== depth - 1) && !passthrough(nghbrData)) {
 							valid = false;
 							break;
 						}
 					}
 				}
+				/*
+				const test = this.detectAreaRecursively(0, 0, dataPoint => {
+					return dataPoint.land;
+				}, this.grid);
+				console.log("test", test, test.length);
+
+
+				test.forEach(({x, y}) => {
+					this.grid.setDataPoint(x, y, {
+						special3: true
+					});
+				});
+				*/
 
 				if(valid) {
 					sinkPoints.push({x, y});
@@ -961,6 +1092,8 @@ class MapGenerator {
 		const elevationColorKey = [...getGradiatedColors('#47995a', '#cee522', 5), ...getGradiatedColors('#e8d122', '#e26f22', 6)];
 
 		fs.writeSync(htmlMap, `<html><header><title>Visual Map</title><style type="text/css">body { background: black; width: ${CALC_DOC_WIDTH}; } canvas { border-width: 0; border-style: solid; border-color: white; margin-top: calc(${CALC_DOC_HEIGHT}px * -0.19); transform: scale(1, 0.62); } .box { width: ${VIS_TILE_SIZE}px; height: ${VIS_TILE_SIZE}px; float: left; }</style></header><body>`);
+		fs.writeSync(htmlMap, '<div id="color-switcher" style="border: 1px solid white; padding: 10px;">');
+		fs.writeSync(htmlMap, '</div>');
 		fs.writeSync(htmlMap, `<canvas id="canvas" width="${CALC_DOC_WIDTH}" height="${CALC_DOC_HEIGHT}"></canvas>`);
 		fs.writeSync(htmlMap, '<script type="text/javascript">');
 
@@ -1031,7 +1164,7 @@ class MapGenerator {
 			}
 
 			if(dataPoint.land) {
-				//hex = moistureColorKey[dataPoint.moisture];
+				hex = moistureColorKey[dataPoint.moisture];
 				//hex = temperatureColorKey[dataPoint.temperature];
 				//hex = elevationColorKey[dataPoint.elevation];
 			}
