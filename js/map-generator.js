@@ -749,10 +749,15 @@ class MapGenerator {
 
 		// Reduce moisture in areas west of mountains
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
-			if(dataPoint.mountain) {
-				let shadow = 3;
+			if(dataPoint.peak) {
+				let shadow = 6;
+				let shadowLength = dataPoint.peak * 4;
 
-				while(shadow < 50) {
+				if(shadowLength > 25) {
+					shadowLength = 25;
+				}
+
+				while(shadow < shadowLength) {
 					const shadowX = x - shadow;
 					const offsetDataPoint = self.getDataPoint(shadowX, y);
 
@@ -762,7 +767,6 @@ class MapGenerator {
 
 					self.setDataPoint(shadowX, y, {
 						rainshadow: true
-						//special2: true
 					});
 
 					initialShadowPoints.push({x: shadowX, y});
@@ -809,6 +813,7 @@ class MapGenerator {
 		});
 
 		// ***TEMP
+		/*
 		this.grid.addFilter((point, x, y) => {
 			const dataPoint = this.grid.getDataPoint(x, y);
 
@@ -830,6 +835,7 @@ class MapGenerator {
 				}
 			}
 		}, true).refresh();
+		*/
 		// ***END TEMP
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
@@ -1092,10 +1098,16 @@ class MapGenerator {
 		const elevationColorKey = [...getGradiatedColors('#47995a', '#cee522', 5), ...getGradiatedColors('#e8d122', '#e26f22', 6)];
 
 		fs.writeSync(htmlMap, `<html><header><title>Visual Map</title><style type="text/css">body { background: black; width: ${CALC_DOC_WIDTH}; } canvas { border-width: 0; border-style: solid; border-color: white; margin-top: calc(${CALC_DOC_HEIGHT}px * -0.19); transform: scale(1, 0.62); } .box { width: ${VIS_TILE_SIZE}px; height: ${VIS_TILE_SIZE}px; float: left; }</style></header><body>`);
-		fs.writeSync(htmlMap, '<div id="color-switcher" style="border: 1px solid white; padding: 10px;">');
-		fs.writeSync(htmlMap, '</div>');
+		fs.writeSync(htmlMap, `
+			<div id="color-switcher" style="border: 1px solid white; padding: 10px; color: white;">
+				<span data-type="elevation" onclick="setHexType('elevation')">Elevation</span>
+				<span data-type="moisture" onclick="setHexType('moisture')">Moisture</span>
+				<span data-type="temperature" onclick="setHexType('temperature')">Temperature</span>
+			</div>
+		`);
 		fs.writeSync(htmlMap, `<canvas id="canvas" width="${CALC_DOC_WIDTH}" height="${CALC_DOC_HEIGHT}"></canvas>`);
 		fs.writeSync(htmlMap, '<script type="text/javascript">');
+		fs.writeSync(htmlMap, `function setHexType(type) { hexType = type; drawCanvas(); }`);
 
 		let varData = '';
 
@@ -1162,11 +1174,14 @@ class MapGenerator {
 						break;
 				}
 			}
+			let elevationHex;
+			let moistureHex;
+			let temperatureHex;
 
 			if(dataPoint.land) {
-				hex = moistureColorKey[dataPoint.moisture];
-				//hex = temperatureColorKey[dataPoint.temperature];
-				//hex = elevationColorKey[dataPoint.elevation];
+				elevationHex = elevationColorKey[dataPoint.elevation];
+				moistureHex = moistureColorKey[dataPoint.moisture];
+				temperatureHex = temperatureColorKey[dataPoint.temperature];
 			}
 			if(dataPoint.special) {
 				hex = '#77ff99';
@@ -1187,14 +1202,61 @@ class MapGenerator {
 				hex = '#66e8ff';
 			}
 
-			varData += `{'color': '${hex}', x: ${x}, y: ${y}},`;
+			varData += `{land: ${dataPoint.land}, color: {default: '${hex}', elevation: '${elevationHex}', moisture: '${moistureHex}', temperature: '${temperatureHex}'}, x: ${x}, y: ${y}},`;
+			//varData += `{color: '${hex}', x: ${x}, y: ${y}},`;
 		});
 
 		fs.writeSync(htmlMap, `var data = [${varData}];`);
 		fs.writeSync(htmlMap, `var tileSize = [${VIS_TILE_SIZE}];`);
-		fs.writeSync(htmlMap, "(function() {");
+		fs.writeSync(htmlMap, `var hexType = 'elevation';`);
+		fs.writeSync(htmlMap, "function drawCanvas() { console.log('calling drawCanvas');");
 		fs.writeSync(htmlMap, "var canvasElem = document.getElementById('canvas');");
 		fs.writeSync(htmlMap, "var context = canvasElem.getContext('2d');");
+		fs.writeSync(htmlMap, `
+			context.fillStyle = "#000000";
+			context.fillRect(0, 0, ${CALC_DOC_WIDTH}, ${CALC_DOC_HEIGHT});
+		`);
+		fs.writeSync(htmlMap, `
+			var halfTizeSize = tileSize / 2;
+			var thirdTileSize = tileSize / 3;
+			var quarterTileSize = tileSize / 4;
+			var writeHex = function(datum) {
+				var corner = {
+					x: datum.x * tileSize,
+					y: datum.y * tileSize + datum.y
+				};
+
+				corner.y += halfTizeSize;
+
+				if(datum.x % 2 == 1) {
+					corner.y -= halfTizeSize;
+				}
+
+				corner.x -= quarterTileSize * datum.x;
+
+				context.fillStyle = datum.land ? datum.color[hexType] : datum.color.default;
+				context.save();
+				context.translate(corner.x, corner.y)
+				context.beginPath();
+				context.moveTo(0, halfTizeSize);
+				context.lineTo(thirdTileSize, 0);
+				context.lineTo(2 * thirdTileSize, 0);
+				context.lineTo(tileSize, halfTizeSize);
+				context.lineTo(2 * thirdTileSize, tileSize);
+				context.lineTo(thirdTileSize, tileSize);
+				context.lineTo(0, halfTizeSize);
+				context.fill();
+				context.restore();
+			};
+		`);
+
+		fs.writeSync(htmlMap, `data.forEach(function(datum) { writeHex(datum); });`);
+		fs.writeSync(htmlMap, "}; drawCanvas();");
+		fs.writeSync(htmlMap, '</script>');
+		fs.writeSync(htmlMap, '</body></html>');
+		fs.closeSync(htmlMap);
+
+		/*
 		const writeHex = `
 			var corner = {
 				x: datum.x * tileSize,
@@ -1224,12 +1286,7 @@ class MapGenerator {
 			context.fill();
 			context.restore();
 		`;
-		//fs.writeSync(htmlMap, "data.forEach(function(datum) { context.fillStyle = datum.color; context.fillRect(datum.x * tileSize, datum.y * tileSize, tileSize, tileSize); });");
-		fs.writeSync(htmlMap, `data.forEach(function(datum) { context.fillStyle = datum.color; ${writeHex} });`);
-		fs.writeSync(htmlMap, "}());");
-		fs.writeSync(htmlMap, '</script>');
-		fs.writeSync(htmlMap, '</body></html>');
-		fs.closeSync(htmlMap);
+		*/
 	}
 };
 
