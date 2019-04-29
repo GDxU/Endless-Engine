@@ -4,10 +4,67 @@ const HexGrid = require('./data-structures/hex-grid');
 const HexCompass = require('./data-structures/hex-compass');
 const {HEX_DIRECTIONS} = require('../data/strings');
 
+/*
+Plateau (dry, hilly-high), badlands (dry, high-temp, hilly-low), wetland (low,  wet), tundra,
+temperate/tropical rainforest, deciduous forest, desert, scrubland, steppe, savannah (flat, low, low-moisture, med-temp),
+grassland, boreal forest, coral reef, salt marsh, swamp/mangrove, lake, river, litoral, kelp forest
+
+Temperature: 0 - 100
+Moisture: 0 - 100
+Elevation: -7 - 20
+		moisture
+temp
+
+*/
+
+// Adjust moisture adjacene to rivers and lakes (wetland, floodplain)
+// Coastal areas near salt-water with elevation 0 can become wetlands
+
+// Sea level
+const biomeMatrix =
+[
+	//['ice'],
+	['tundra',			'tundra',		'grassland',	'boreal forest',		'boreal forest'],
+	['grassland',		'shrubland',	'woodland',		'woodland',				'evergreen forest'],
+	['scrubland',		'grassland',	'shrubland',	'woodland',				'temperate rainforest'],
+	['desert',			'scrubland',	'savanna',		'woodland',				'tropical rainforest'],
+	['hot desert',		'desert',		'scrubland',	'savanna',				'tropical rainforest']
+];
+const biomeColorMap = {
+	'boreal forest': '#129b50',
+	'desert': '#d19955',
+	'evergreen forest': '#117569',
+	'hot desert': '#ef7b2d',
+	'ice': '#f3f3ff',
+	'grassland': '#8caa63',
+	'savanna': '#c3e291',
+	'scrubland': '#c9c07a',
+	'shrubland': '#65994f',
+	'temperate rainforest': '#5c8e6e',
+	'tropical rainforest': '#364900',
+	'tundra': '#8cada9',
+	'woodland': '#3e6b1a'
+};
+
+// Low-hill elevation
+// badlands
+
+// High elevation (reduce temperature a little, and past a certain point reduce moisture)
+// taiga, alpine tundra, ice/polar
+
+// River adjacent
+// floodplain, swamp, delta
+
+// Coast
+// salt marsh, mangroves, sandy beach, cliffs, rocky/rugged
+
+// Inlet types:
+// cove, bay, mudflat?, lagoon
+
+
 const createDataExemplar = () => {
 	return {
 		depth: 0,
-		//depthRays: {},
 		elevation: 0,
 		moisture: 0,
 		land: false,
@@ -210,6 +267,7 @@ class MapGenerator {
 		this.setWaterElevation();
 		this.setMoisture();
 		this.adjustMoistureFromElevation();
+		this.adjustMoistureFromAirCurrents();
 
 
 		this.print();
@@ -712,6 +770,7 @@ class MapGenerator {
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
 			let moisture = 100;
 
+			/*
 			switch(true) {
 				case y > band5:
 					moisture = 100 - Math.round(100 * (y - band5) / poleWidth);
@@ -737,6 +796,10 @@ class MapGenerator {
 
 			if(moisture > 100) {
 				moisture = 100;
+			}
+			*/
+			if(dataPoint.land) {
+				moisture = 55;
 			}
 
 			self.setDataPoint(x, y, {moisture});
@@ -792,7 +855,7 @@ class MapGenerator {
 				const metaPoint = self.getMetaPoint(x, y);
 
 				if(metaPoint.edge) {
-					const blobSize = 1 + Math.floor(Math.random() * 25);
+					const blobSize = 4 + Math.floor(Math.random() * 25);
 					const blob = self.getBlobShape(x, y, blobSize);
 
 					edgeBlobPoints.push(blob);
@@ -840,13 +903,154 @@ class MapGenerator {
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
 			if(dataPoint.rainshadow) {
-				const calcMoisture = dataPoint.moisture - 25;
+				const calcMoisture = dataPoint.moisture - 30;
 
 				self.setDataPoint(x, y, {
 					moisture: calcMoisture < 0 ? 0 : calcMoisture
 				});
 			}
 		});
+	}
+	adjustMoistureFromAirCurrents() {
+		const castWindRay = (x, y, {direction, nextCoordsIncr, xLimitTest, yLimitTest, maxAdjust = 35}) => {
+			let currentX = x;
+			let currentY = y;
+			let airMoisture = 55;
+			let extension = 0;
+
+			while(true) {
+				const metaPoint = this.grid.getMetaPoint(currentX, currentY);
+				const dataPoint = this.grid.getDataPoint(currentX, currentY);
+				let pointMoisture = dataPoint.moisture;
+
+				if(!metaPoint || !dataPoint) {
+					break;
+				}
+
+				if(dataPoint.land) {
+					const rawDiff = dataPoint.moisture - airMoisture;
+					const diff = Math.abs(rawDiff);
+					let adjustment = diff > maxAdjust ? maxAdjust : diff;
+
+					adjustment -= extension;
+
+					if(adjustment < 0) {
+						break;
+					}
+
+					if(rawDiff > 0) {
+						pointMoisture -= adjustment;
+						//airMoisture += 1;
+					} else {
+						pointMoisture += adjustment;
+						airMoisture -= 2;
+					}
+
+					this.grid.setDataPoint(currentX, currentY, {
+						moisture: pointMoisture
+					});
+				} else {
+					airMoisture += (dataPoint.freshwater ? 1 : 5);
+				}
+
+				if(airMoisture > 100) {
+					airMoisture = 100;
+				}
+				if(airMoisture < 0) {
+					airMoisture = 0;
+				}
+
+				let nextCoords;
+
+				if(direction) {
+					nextCoords = metaPoint[direction];
+				}
+				if(nextCoordsIncr) {
+					nextCoords = {x: currentX + nextCoordsIncr.x, y: currentY + nextCoordsIncr.y};
+				}
+
+				if(!nextCoords) {
+					break;
+				} else {
+					currentX = nextCoords.x;
+					currentY = nextCoords.y;
+				}
+
+				if(yLimitTest) {
+					if(yLimitTest(currentY)) {
+						const nextDataPoint = this.grid.getDataPoint(currentX, currentY);
+
+						if(!nextDataPoint || !nextDataPoint.land) {
+							break;
+						}
+
+						extension++;
+					}
+				}
+				if(xLimitTest) {
+					if(xLimitTest(currentX)) {
+						const nextDataPoint = this.grid.getDataPoint(currentX, currentY);
+
+						if(!nextDataPoint || !nextDataPoint.land) {
+							break;
+						}
+
+						extension++;
+					}
+				}
+			}
+		};
+
+		const nConvergenceY1 = Math.floor(this.height / 4);
+		let nConvergenceY2 = Math.ceil(this.height / 4);
+		const sConvergenceY1 = Math.floor(this.height * 3 / 4);
+		let sConvergenceY2 = Math.ceil(this.height * 3 / 4);
+		const equatorY1 = Math.floor(this.height / 2);
+		let equatorY2 = Math.ceil(this.height / 2);
+
+		if(nConvergenceY1 === nConvergenceY2) {
+			nConvergenceY2++;
+		}
+		if(sConvergenceY1 === sConvergenceY2) {
+			sConvergenceY2++;
+		}
+		if(equatorY1 === equatorY2) {
+			equatorY2++;
+		}
+
+		for(let x = 0; x < this.grid.width; x++) {
+			// Diagonal
+			castWindRay(x, nConvergenceY1, {direction: HEX_DIRECTIONS[1], yLimitTest: currentY => { if(currentY < 0) { return true; } }});
+			castWindRay(x, nConvergenceY2, {direction: HEX_DIRECTIONS[4], yLimitTest: currentY => { if(currentY > equatorY1) { return true; } }});
+			castWindRay(x, sConvergenceY1, {direction: HEX_DIRECTIONS[1], yLimitTest: currentY => { if(currentY < equatorY2) { return true; } }});
+			castWindRay(x, sConvergenceY2, {direction: HEX_DIRECTIONS[4], yLimitTest: currentY => { if(currentY >= this.grid.height) { return true; } }});
+		}
+
+		/*
+		for(let x = 0; x < this.grid.width; x++) {
+			// Vertical
+			castWindRay(x, nConvergenceY1, {direction: HEX_DIRECTIONS[0], yLimitTest: currentY => { if(currentY < 0) { return true; } }, maxAdjust: 22});
+			castWindRay(x, nConvergenceY2, {direction: HEX_DIRECTIONS[3], yLimitTest: currentY => { if(currentY > equatorY1) { return true; } }, maxAdjust: 22});
+			castWindRay(x, sConvergenceY1, {direction: HEX_DIRECTIONS[0], yLimitTest: currentY => { if(currentY < equatorY2) { return true; } }, maxAdjust: 22});
+			castWindRay(x, sConvergenceY2, {direction: HEX_DIRECTIONS[3], yLimitTest: currentY => { if(currentY >= this.grid.height) { return true; } }, maxAdjust: 22});
+		}
+		*/
+
+		/*
+		// Horizontal
+		for(let y = 0; y < nConvergenceY2; y++) {
+			castWindRay(0, y, {nextCoordsIncr: {x: 1, y: 0}, xLimitTest: currentX => { if(currentX > this.grid.width - 1) { return true; } }, maxAdjust: 8});
+		}
+		for(let y = nConvergenceY2; y < equatorY1; y++) {
+			castWindRay(this.grid.width - 1, y, {nextCoordsIncr: {x: -1, y: 0}, xLimitTest: currentX => { if(currentX < 0) { return true; } }, maxAdjust: 8});
+		}
+		for(let y = equatorY1; y < sConvergenceY1; y++) {
+			castWindRay(0, y, {nextCoordsIncr: {x: 1, y: 0}, xLimitTest: currentX => { if(currentX > this.grid.width - 1) { return true; } }, maxAdjust: 8});
+		}
+		for(let y = sConvergenceY2; y < this.grid.height; y++) {
+			castWindRay(this.grid.width - 1, y, {nextCoordsIncr: {x: -1, y: 0}, xLimitTest: currentX => { if(currentX < 0) { return true; } }, maxAdjust: 8});
+		}
+		*/
 	}
 	setTemperatures() {
 		const poleBuffer = 8;
@@ -1056,6 +1260,46 @@ class MapGenerator {
 			}
 		});
 	}
+	getBiomeHex(dataPoint) {
+		const valueMax = 100;
+		const numValueBuckets = 5;
+		const divisor = (valueMax + 1) / numValueBuckets;
+		const {elevation, moisture, temperature} = dataPoint;
+
+		const rawTemperatureIndex = temperature / divisor;
+		const rawMoistureIndex = moisture / divisor;
+
+		let temperatureRemainder = rawTemperatureIndex - Math.floor(rawTemperatureIndex);
+		let moistureRemainder = rawMoistureIndex - Math.floor(rawMoistureIndex);
+
+		if(temperatureRemainder < 0.35) {
+			temperatureRemainder = 0;
+		}
+		if(temperatureRemainder > 0.65) {
+			temperatureRemainder = 1;
+		}
+
+		if(moistureRemainder < 0.35) {
+			moistureRemainder = 0;
+		}
+		if(moistureRemainder > 0.65) {
+			moistureRemainder = 1;
+		}
+
+		let temperatureIndex = Math.random() < temperatureRemainder ? Math.ceil(rawTemperatureIndex) : Math.floor(rawTemperatureIndex);
+		let moistureIndex = Math.random() < moistureRemainder ? Math.ceil(rawMoistureIndex) : Math.floor(rawMoistureIndex);
+
+		if(temperatureIndex >= numValueBuckets) {
+			temperatureIndex = numValueBuckets - 1;
+		}
+		if(moistureIndex >= numValueBuckets) {
+			moistureIndex = numValueBuckets - 1;
+		}
+
+		const type = biomeMatrix[temperatureIndex][moistureIndex];
+
+		return biomeColorMap[type];
+	}
 	print() {
 		const VIS_TILE_SIZE = 5;
 		const CALC_DOC_WIDTH = this.width * VIS_TILE_SIZE * 0.75 + VIS_TILE_SIZE;
@@ -1097,12 +1341,41 @@ class MapGenerator {
 		//const elevationColorKey = getGradiatedColors('#47995a', '#995d47', 10);
 		const elevationColorKey = [...getGradiatedColors('#47995a', '#cee522', 5), ...getGradiatedColors('#e8d122', '#e26f22', 6)];
 
-		fs.writeSync(htmlMap, `<html><header><title>Visual Map</title><style type="text/css">body { background: black; width: ${CALC_DOC_WIDTH}; } canvas { border-width: 0; border-style: solid; border-color: white; margin-top: calc(${CALC_DOC_HEIGHT}px * -0.19); transform: scale(1, 0.62); } .box { width: ${VIS_TILE_SIZE}px; height: ${VIS_TILE_SIZE}px; float: left; }</style></header><body>`);
+		fs.writeSync(htmlMap, `
+			<html>
+			<header>
+			<title>Visual Map</title>
+			<style type="text/css">
+				body {
+					background: black;
+					font-family: Arial;
+					width: ${CALC_DOC_WIDTH};
+				}
+				canvas {
+					border-width: 0;
+					border-style: solid;
+					border-color: white;
+					margin-top: calc(${CALC_DOC_HEIGHT}px * -0.19);
+					transform: scale(1, 0.62);
+				}
+				.box {
+					width: ${VIS_TILE_SIZE}px;
+					height: ${VIS_TILE_SIZE}px;
+					float: left;
+				}
+				#color-switcher span {
+					cursor: pointer;
+					margin-right: 12px;
+				}
+			</style>
+			</header>
+			<body>`);
 		fs.writeSync(htmlMap, `
 			<div id="color-switcher" style="border: 1px solid white; padding: 10px; color: white;">
-				<span data-type="elevation" onclick="setHexType('elevation')">Elevation</span>
-				<span data-type="moisture" onclick="setHexType('moisture')">Moisture</span>
-				<span data-type="temperature" onclick="setHexType('temperature')">Temperature</span>
+				<span onclick="setHexType('biome')">Biome</span>
+				<span onclick="setHexType('elevation')">Elevation</span>
+				<span onclick="setHexType('moisture')">Moisture</span>
+				<span onclick="setHexType('temperature')">Temperature</span>
 			</div>
 		`);
 		fs.writeSync(htmlMap, `<canvas id="canvas" width="${CALC_DOC_WIDTH}" height="${CALC_DOC_HEIGHT}"></canvas>`);
@@ -1174,35 +1447,38 @@ class MapGenerator {
 						break;
 				}
 			}
+			let biomeHex;
 			let elevationHex;
 			let moistureHex;
 			let temperatureHex;
+			let specialHex;
 
 			if(dataPoint.land) {
+				biomeHex = this.getBiomeHex(dataPoint);
 				elevationHex = elevationColorKey[dataPoint.elevation];
 				moistureHex = moistureColorKey[dataPoint.moisture];
 				temperatureHex = temperatureColorKey[dataPoint.temperature];
 			}
 			if(dataPoint.special) {
-				hex = '#77ff99';
+				specialHex = '#77ff99';
 			}
 			if(dataPoint.special2) {
-				hex = '#db230f';
+				specialHex = '#db230f';
 			}
 			if(dataPoint.special3) {
-				hex = '#ffae00';
+				specialHex = '#ffae00';
 			}
 			if(dataPoint.special4) {
-				hex = '#9988ff';
+				specialHex = '#9988ff';
 			}
 			if(dataPoint.special5) {
-				hex = '#f591ff';
+				specialHex = '#f591ff';
 			}
 			if(dataPoint.special6) {
-				hex = '#66e8ff';
+				specialHex = '#66e8ff';
 			}
 
-			varData += `{land: ${dataPoint.land}, color: {default: '${hex}', elevation: '${elevationHex}', moisture: '${moistureHex}', temperature: '${temperatureHex}'}, x: ${x}, y: ${y}},`;
+			varData += `{land: ${dataPoint.land}, color: {default: '${hex}', special: '${specialHex}', biome: '${biomeHex}', elevation: '${elevationHex}', moisture: '${moistureHex}', temperature: '${temperatureHex}'}, x: ${x}, y: ${y}},`;
 			//varData += `{color: '${hex}', x: ${x}, y: ${y}},`;
 		});
 
@@ -1235,6 +1511,7 @@ class MapGenerator {
 				corner.x -= quarterTileSize * datum.x;
 
 				context.fillStyle = datum.land ? datum.color[hexType] : datum.color.default;
+				context.fillStyle = datum.color.special || context.fillStyle;
 				context.save();
 				context.translate(corner.x, corner.y)
 				context.beginPath();
