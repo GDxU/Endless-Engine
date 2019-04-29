@@ -27,7 +27,7 @@ const biomeMatrix =
 	['tundra',			'tundra',		'grassland',	'boreal forest',		'boreal forest'],
 	['grassland',		'shrubland',	'woodland',		'woodland',				'evergreen forest'],
 	['scrubland',		'grassland',	'shrubland',	'woodland',				'temperate rainforest'],
-	['desert',			'scrubland',	'savanna',		'woodland',				'tropical rainforest'],
+	['desert',			'scrubland',	'savanna',		'woodland',				'temperate rainforest'],
 	['hot desert',		'desert',		'scrubland',	'savanna',				'tropical rainforest']
 ];
 const biomeColorMap = {
@@ -266,8 +266,8 @@ class MapGenerator {
 		this.createRivers();
 		this.setWaterElevation();
 		this.setMoisture();
-		this.adjustMoistureFromElevation();
 		this.adjustMoistureFromAirCurrents();
+		this.adjustMoistureFromElevation();
 
 
 		this.print();
@@ -799,7 +799,7 @@ class MapGenerator {
 			}
 			*/
 			if(dataPoint.land) {
-				moisture = 55;
+				moisture = 65;
 			}
 
 			self.setDataPoint(x, y, {moisture});
@@ -915,7 +915,7 @@ class MapGenerator {
 		const castWindRay = (x, y, {direction, nextCoordsIncr, xLimitTest, yLimitTest, maxAdjust = 35}) => {
 			let currentX = x;
 			let currentY = y;
-			let airMoisture = 55;
+			let airMoisture = 50;
 			let extension = 0;
 
 			while(true) {
@@ -943,18 +943,33 @@ class MapGenerator {
 						//airMoisture += 1;
 					} else {
 						pointMoisture += adjustment;
-						airMoisture -= 2;
+						airMoisture -= 3;
 					}
 
 					this.grid.setDataPoint(currentX, currentY, {
 						moisture: pointMoisture
 					});
+
+					if(Math.random() > 0.75) {
+						const blobSize = 3 + Math.floor(Math.random() * 20);
+						const blob = this.grid.getBlobShape(currentX, currentY, blobSize);
+
+						blob.forEach(blobPoint => {
+							const blobDataPoint = this.grid.getDataPoint(blobPoint.x, blobPoint.y);
+
+							if(blobDataPoint && blobDataPoint.land) {
+								this.grid.setDataPoint(blobPoint.x, blobPoint.y, {
+									moisture: pointMoisture
+								});
+							}
+						});
+					}
 				} else {
-					airMoisture += (dataPoint.freshwater ? 1 : 5);
+					airMoisture += (dataPoint.freshwater ? 1 : 4);
 				}
 
-				if(airMoisture > 100) {
-					airMoisture = 100;
+				if(airMoisture > 120) {
+					airMoisture = 120;
 				}
 				if(airMoisture < 0) {
 					airMoisture = 0;
@@ -1026,17 +1041,14 @@ class MapGenerator {
 			castWindRay(x, sConvergenceY2, {direction: HEX_DIRECTIONS[4], yLimitTest: currentY => { if(currentY >= this.grid.height) { return true; } }});
 		}
 
-		/*
 		for(let x = 0; x < this.grid.width; x++) {
 			// Vertical
-			castWindRay(x, nConvergenceY1, {direction: HEX_DIRECTIONS[0], yLimitTest: currentY => { if(currentY < 0) { return true; } }, maxAdjust: 22});
-			castWindRay(x, nConvergenceY2, {direction: HEX_DIRECTIONS[3], yLimitTest: currentY => { if(currentY > equatorY1) { return true; } }, maxAdjust: 22});
-			castWindRay(x, sConvergenceY1, {direction: HEX_DIRECTIONS[0], yLimitTest: currentY => { if(currentY < equatorY2) { return true; } }, maxAdjust: 22});
-			castWindRay(x, sConvergenceY2, {direction: HEX_DIRECTIONS[3], yLimitTest: currentY => { if(currentY >= this.grid.height) { return true; } }, maxAdjust: 22});
+			castWindRay(x, nConvergenceY1, {direction: HEX_DIRECTIONS[0], yLimitTest: currentY => { if(currentY < 0) { return true; } }, maxAdjust: 10});
+			castWindRay(x, nConvergenceY2, {direction: HEX_DIRECTIONS[3], yLimitTest: currentY => { if(currentY > equatorY1) { return true; } }, maxAdjust: 10});
+			castWindRay(x, sConvergenceY1, {direction: HEX_DIRECTIONS[0], yLimitTest: currentY => { if(currentY < equatorY2) { return true; } }, maxAdjust: 10});
+			castWindRay(x, sConvergenceY2, {direction: HEX_DIRECTIONS[3], yLimitTest: currentY => { if(currentY >= this.grid.height) { return true; } }, maxAdjust: 10});
 		}
-		*/
 
-		/*
 		// Horizontal
 		for(let y = 0; y < nConvergenceY2; y++) {
 			castWindRay(0, y, {nextCoordsIncr: {x: 1, y: 0}, xLimitTest: currentX => { if(currentX > this.grid.width - 1) { return true; } }, maxAdjust: 8});
@@ -1050,7 +1062,6 @@ class MapGenerator {
 		for(let y = sConvergenceY2; y < this.grid.height; y++) {
 			castWindRay(this.grid.width - 1, y, {nextCoordsIncr: {x: -1, y: 0}, xLimitTest: currentX => { if(currentX < 0) { return true; } }, maxAdjust: 8});
 		}
-		*/
 	}
 	setTemperatures() {
 		const poleBuffer = 8;
@@ -1272,17 +1283,17 @@ class MapGenerator {
 		let temperatureRemainder = rawTemperatureIndex - Math.floor(rawTemperatureIndex);
 		let moistureRemainder = rawMoistureIndex - Math.floor(rawMoistureIndex);
 
-		if(temperatureRemainder < 0.35) {
+		if(temperatureRemainder < 0.4) {
 			temperatureRemainder = 0;
 		}
-		if(temperatureRemainder > 0.65) {
+		if(temperatureRemainder > 0.6) {
 			temperatureRemainder = 1;
 		}
 
-		if(moistureRemainder < 0.35) {
+		if(moistureRemainder < 0.4) {
 			moistureRemainder = 0;
 		}
-		if(moistureRemainder > 0.65) {
+		if(moistureRemainder > 0.6) {
 			moistureRemainder = 1;
 		}
 
