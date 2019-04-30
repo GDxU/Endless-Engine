@@ -23,7 +23,7 @@ temp
 // Sea level
 const biomeMatrix =
 [
-	//['ice'],
+	['moonscape',		'moonscape',	'ice',			'ice',					'ice'],
 	['tundra',			'tundra',		'grassland',	'boreal forest',		'boreal forest'],
 	['grassland',		'shrubland',	'woodland',		'woodland',				'evergreen forest'],
 	['scrubland',		'grassland',	'shrubland',	'woodland',				'temperate rainforest'],
@@ -37,6 +37,7 @@ const biomeColorMap = {
 	'hot desert': '#ef7b2d',
 	'ice': '#f3f3ff',
 	'grassland': '#8caa63',
+	'moonscape': '#a09090',
 	'savanna': '#c3e291',
 	'scrubland': '#c9c07a',
 	'shrubland': '#65994f',
@@ -266,8 +267,10 @@ class MapGenerator {
 		this.createRivers();
 		this.setWaterElevation();
 		this.setMoisture();
+		this.adjustMoistureFromDepth();
 		this.adjustMoistureFromAirCurrents();
 		this.adjustMoistureFromElevation();
+		this.adjustTemperatureFromElevation();
 
 
 		this.print();
@@ -721,7 +724,7 @@ class MapGenerator {
 		// Continents
 		const BIG_SIZES = [5000, 4000, 4000, 3200, 3000, 2600];
 		for(let i = 0; i < BIG_SIZES.length; i++) {
-			const randStart = this.grid.getRandomPoint({x: 0, y: Math.ceil(this.height * 0.32)}, {x: this.width - 1, y: Math.floor(this.height * 0.68)});
+			const randStart = this.grid.getRandomPoint({x: 0, y: Math.ceil(this.height * 0.3)}, {x: this.width - 1, y: Math.floor(this.height * 0.7)});
 			const path = this.grid.getBlobShape(randStart.x, randStart.y, BIG_SIZES[i]);
 
 			path.forEach(({x, y}) => {
@@ -946,6 +949,10 @@ class MapGenerator {
 						airMoisture -= 3;
 					}
 
+					if(pointMoisture > 100) {
+						pointMoisture = 100;
+					}
+
 					this.grid.setDataPoint(currentX, currentY, {
 						moisture: pointMoisture
 					});
@@ -968,8 +975,8 @@ class MapGenerator {
 					airMoisture += (dataPoint.freshwater ? 1 : 4);
 				}
 
-				if(airMoisture > 120) {
-					airMoisture = 120;
+				if(airMoisture > 130) {
+					airMoisture = 130;
 				}
 				if(airMoisture < 0) {
 					airMoisture = 0;
@@ -1062,6 +1069,36 @@ class MapGenerator {
 		for(let y = sConvergenceY2; y < this.grid.height; y++) {
 			castWindRay(this.grid.width - 1, y, {nextCoordsIncr: {x: -1, y: 0}, xLimitTest: currentX => { if(currentX < 0) { return true; } }, maxAdjust: 8});
 		}
+	}
+	adjustMoistureFromDepth() {
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			if(dataPoint.land) {
+				let moistureAdj = (10 - dataPoint.depth) * 3;
+
+				if(moistureAdj > 0) {
+					let calcMoisture = dataPoint.moisture + moistureAdj;
+
+					self.setDataPoint(x, y, {
+						moisture: calcMoisture > 100 ? 100 : calcMoisture
+					});
+				}
+			}
+		});
+	}
+	adjustTemperatureFromElevation() {
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			if(dataPoint.land) {
+				const tempReduction = (dataPoint.elevation - 1) * 7;
+
+				if(tempReduction) {
+					const calcTemperature = dataPoint.temperature - tempReduction;
+
+					self.setDataPoint(x, y, {
+						temperature: calcTemperature > 0 ? calcTemperature : 0
+					});
+				}
+			}
+		});
 	}
 	setTemperatures() {
 		const poleBuffer = 8;
@@ -1273,12 +1310,16 @@ class MapGenerator {
 	}
 	getBiomeHex(dataPoint) {
 		const valueMax = 100;
-		const numValueBuckets = 5;
-		const divisor = (valueMax + 1) / numValueBuckets;
+		//const numValueBuckets = 5;
+		const numMoistureValueBuckets = 5;
+		const numTemperatureValueBuckets = 6;
+		//const divisor = (valueMax + 1) / numValueBuckets;
+		const moistureDivisor = (valueMax + 1) / numMoistureValueBuckets;
+		const temperatureDivisor = (valueMax + 1) / numTemperatureValueBuckets;
 		const {elevation, moisture, temperature} = dataPoint;
 
-		const rawTemperatureIndex = temperature / divisor;
-		const rawMoistureIndex = moisture / divisor;
+		const rawTemperatureIndex = temperature / temperatureDivisor;
+		const rawMoistureIndex = moisture / moistureDivisor;
 
 		let temperatureRemainder = rawTemperatureIndex - Math.floor(rawTemperatureIndex);
 		let moistureRemainder = rawMoistureIndex - Math.floor(rawMoistureIndex);
@@ -1300,11 +1341,11 @@ class MapGenerator {
 		let temperatureIndex = Math.random() < temperatureRemainder ? Math.ceil(rawTemperatureIndex) : Math.floor(rawTemperatureIndex);
 		let moistureIndex = Math.random() < moistureRemainder ? Math.ceil(rawMoistureIndex) : Math.floor(rawMoistureIndex);
 
-		if(temperatureIndex >= numValueBuckets) {
-			temperatureIndex = numValueBuckets - 1;
+		if(temperatureIndex >= numTemperatureValueBuckets) {
+			temperatureIndex = numTemperatureValueBuckets - 1;
 		}
-		if(moistureIndex >= numValueBuckets) {
-			moistureIndex = numValueBuckets - 1;
+		if(moistureIndex >= numMoistureValueBuckets) {
+			moistureIndex = numMoistureValueBuckets - 1;
 		}
 
 		const type = biomeMatrix[temperatureIndex][moistureIndex];
