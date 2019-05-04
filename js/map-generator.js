@@ -37,7 +37,7 @@ const biomeColorMap = {
 	'hot desert': '#ef7b2d',
 	'ice': '#f3f3ff',
 	'grassland': '#8caa63',
-	'moonscape': '#a09090',
+	'moonscape': '#9090a9',
 	'savanna': '#c3e291',
 	'scrubland': '#c9c07a',
 	'shrubland': '#65994f',
@@ -264,6 +264,7 @@ class MapGenerator {
 
 		this.createMountains();
 		this.setPeakElevations();
+		//this.raiseRandomLandforms();
 		this.createRivers();
 		this.setWaterElevation();
 		this.setMoisture();
@@ -476,7 +477,7 @@ class MapGenerator {
 		const rangeSizes = [
 			{
 				len: 35,
-				max: 10,
+				max: 30,
 				used: 0
 			},
 			{
@@ -617,8 +618,11 @@ class MapGenerator {
 
 					ringLoop:
 					while(true) {
+						const double = Math.random() > 0.65;
 						const ringElev = currentElev - radius;
-						const ring = self.getRing(x, y, radius);
+						//const ring = self.getRing(x, y, radius);
+						//const ring = [...self.getRing(x, y, radius), ...self.getRing(x, y, radius + 1)];
+						const ring = double ? [...self.getRing(x, y, radius), ...self.getRing(x, y, radius + 1)] : self.getRing(x, y, radius);
 
 						for(let i = 0; i < ring.length; i++) {
 							const ringDataPoint = self.getDataPoint(ring[i].x, ring[i].y);
@@ -643,7 +647,9 @@ class MapGenerator {
 							break ringLoop;
 						}
 
-						radius++;
+						//radius++;
+						//radius += 2;
+						radius += double ? 2 : 1;
 					}
 
 					pointsToRaise.forEach(raisePoint => {
@@ -663,6 +669,49 @@ class MapGenerator {
 
 			currentElev++;
 		}
+
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			if(dataPoint.peak && Math.random() > 0.75) {
+				const randSize = 70 + Math.floor(Math.random() * 150);
+
+				this.grid.getBlobShape(x, y, randSize).forEach(({x, y}) => {
+					const blobDataPoint = this.grid.getDataPoint(x, y);
+
+					if(blobDataPoint.land && Math.random() > 0.15) {
+						this.grid.setDataPoint(x, y, {
+							elevation: blobDataPoint.elevation + 1
+						});
+					}
+				});
+			}
+		});
+	}
+	raiseRandomLandforms() {
+		let successes = 0;
+		const maxSuccess = 40;
+
+		this.grid.eachPointRandom((point, randStartX, randStartY, self) => {
+			const startDataPoint = this.grid.getDataPoint(randStartX, randStartY);
+
+			if(startDataPoint.land) {
+				const randSize = 50 + Math.floor(Math.random() * 300);
+
+				this.grid.getBlobShape(randStartX, randStartY, randSize).forEach(({x, y}) => {
+					const dataPoint = this.grid.getDataPoint(x, y);
+
+					if(dataPoint.land && Math.random() > 0.15) {
+						this.grid.setDataPoint(x, y, {
+							elevation: dataPoint.elevation + 1
+							//special2: true
+						});
+					}
+				});
+
+				if(++successes >= maxSuccess) {
+					return true;
+				}
+			}
+		});
 	}
 	setPointElevation(centerX, centerY, targetElev, test) {
 		this.grid.setDataPoint(centerX, centerY, {
