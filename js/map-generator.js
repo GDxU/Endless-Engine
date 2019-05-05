@@ -67,8 +67,11 @@ const createDataExemplar = () => {
 	return {
 		depth: 0,
 		elevation: 0,
+		//freshwater: false
 		moisture: 0,
+		//mountain: false
 		land: false,
+		//peak: false
 		temperature: 0,
 		/*
 		elevation: {
@@ -133,13 +136,6 @@ class MapGenerator {
 			wrapX: true
 		}, createDataExemplar);
 
-		/*
-		const path = this.grid.getWindingPath(200, 100, 130);
-		path.forEach(({x, y}) => {
-			this.grid.setPoint(x, y, 1);
-		});
-		*/
-
 		this.seedContinents();
 		this.detectAreas();
 
@@ -163,7 +159,7 @@ class MapGenerator {
 			landDepth++;
 		}
 
-		for(let d = 1; d < 6; d++) {
+		for(let d = 1; d < 9; d++) {
 			const test = dataPoint => {
 				return !dataPoint.land;
 			};
@@ -264,9 +260,11 @@ class MapGenerator {
 
 		this.createMountains();
 		this.setPeakElevations();
-		//this.raiseRandomLandforms();
+		//this.raiseRandomLandAreas();
 		this.createRivers();
 		this.setWaterElevation();
+		this.raiseRandomCoastalAreas();
+		this.raiseRandomWaterAreas();
 		this.setMoisture();
 		this.adjustMoistureFromDepth();
 		this.adjustMoistureFromAirCurrents();
@@ -342,7 +340,7 @@ class MapGenerator {
 		console.log("legend", legend);
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
-			if(!dataPoint.land && legend.water[dataPoint.areaID] < 300) {
+			if(!dataPoint.land && legend.water[dataPoint.areaID] < 400) {
 				self.setDataPoint(x, y, {
 					freshwater: true,
 					special6: true
@@ -477,7 +475,7 @@ class MapGenerator {
 		const rangeSizes = [
 			{
 				len: 35,
-				max: 30,
+				max: 40,
 				used: 0
 			},
 			{
@@ -590,8 +588,8 @@ class MapGenerator {
 
 						peakPosition = Math.ceil(peakPosition * 0.32);
 
-						if(peakPosition > 8) {
-							peakPosition = 2 + Math.floor(Math.random() * 8);
+						if(peakPosition > 7) {
+							peakPosition = 2 + Math.floor(Math.random() * 7);
 						}
 
 						self.setDataPoint(x, y, {peak: peakPosition});
@@ -671,8 +669,8 @@ class MapGenerator {
 		}
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
-			if(dataPoint.peak && Math.random() > 0.75) {
-				const randSize = 70 + Math.floor(Math.random() * 150);
+			if(dataPoint.peak && Math.random() > 0.73) {
+				const randSize = 80 + Math.floor(Math.random() * 200);
 
 				this.grid.getBlobShape(x, y, randSize).forEach(({x, y}) => {
 					const blobDataPoint = this.grid.getDataPoint(x, y);
@@ -686,7 +684,60 @@ class MapGenerator {
 			}
 		});
 	}
-	raiseRandomLandforms() {
+	raiseRandomCoastalAreas() {
+		this.grid.eachPointRandom((point, randStartX, randStartY, self) => {
+			if(Math.random() > 0.03) {
+				return;
+			}
+
+			const startDataPoint = this.grid.getDataPoint(randStartX, randStartY);
+
+			if(!startDataPoint.land && startDataPoint.elevation > -4) {
+				const randSize = 10 + Math.floor(Math.random() * 300);
+
+				this.grid.getBlobShape(randStartX, randStartY, randSize).forEach(({x, y}) => {
+					const dataPoint = this.grid.getDataPoint(x, y);
+
+					if(!dataPoint.land && Math.random() > 0.15) {
+						const calcElevation = dataPoint.elevation + 1;
+
+						this.grid.setDataPoint(x, y, {
+							elevation: calcElevation > -1 ? -1 : calcElevation
+						});
+					}
+				});
+			}
+		});
+	}
+	raiseRandomWaterAreas() {
+		let successes = 0;
+		const maxSuccess = 80;
+
+		this.grid.eachPointRandom((point, randStartX, randStartY, self) => {
+			const startDataPoint = this.grid.getDataPoint(randStartX, randStartY);
+
+			if(!startDataPoint.land) {
+				const randSize = 30 + Math.floor(Math.random() * 300);
+
+				this.grid.getBlobShape(randStartX, randStartY, randSize).forEach(({x, y}) => {
+					const dataPoint = this.grid.getDataPoint(x, y);
+
+					if(!dataPoint.land && Math.random() > 0.15) {
+						const calcElevation = dataPoint.elevation + 1;
+
+						this.grid.setDataPoint(x, y, {
+							elevation: calcElevation > -1 ? -1 : calcElevation
+						});
+					}
+				});
+
+				if(++successes >= maxSuccess) {
+					return true;
+				}
+			}
+		});
+	}
+	raiseRandomLandAreas() {
 		let successes = 0;
 		const maxSuccess = 40;
 
@@ -702,7 +753,6 @@ class MapGenerator {
 					if(dataPoint.land && Math.random() > 0.15) {
 						this.grid.setDataPoint(x, y, {
 							elevation: dataPoint.elevation + 1
-							//special2: true
 						});
 					}
 				});
@@ -1337,19 +1387,11 @@ class MapGenerator {
 		return sinkPoints.length;
 	}
 	setWaterElevation() {
-		const waterDepthElevationKey = [
-			-1,
-			-2,
-			-3,
-			-4,
-			-5,
-			-6,
-			-7
-		];
+		const waterDepthElevationKey = [-1, -2, -3, -4, -5, -6, -7, -8, -9];
 
 		this.grid.eachDataPoint((dataPoint, x, y, self) => {
 			if(!dataPoint.land) {
-				const elevation = (dataPoint.depth >= waterDepthElevationKey.length) ? -6 : waterDepthElevationKey[dataPoint.depth];
+				const elevation = (dataPoint.depth >= waterDepthElevationKey.length) ? -9 : waterDepthElevationKey[dataPoint.depth];
 
 				self.setDataPoint(x, y, {
 					elevation
@@ -1543,6 +1585,12 @@ class MapGenerator {
 						break;
 					case -7:
 						hex = '#001057';
+						break;
+					case -8:
+						hex = '#000d46';
+						break;
+					case -9:
+						hex = '#000a39';
 						break;
 					default:
 						break;

@@ -35,7 +35,7 @@ module.exports = class Engine {
 		};
 
 		//mapGenerator.generate(500, 250);
-		mapGenerator.generate(500, 250);
+		const mapData = mapGenerator.generate(500, 250);
 		//mapGenerator.generate(40, 250);
 		//mapGenerator.generate(150, 150);
 
@@ -151,7 +151,6 @@ module.exports = class Engine {
 
 		const hexGridTest = new HexGrid(10, 10);
 		hexGridTest.populate(60).setMetaRelationships();
-		console.log( hexGridTest.getMetaPoint(4, 4) );
 
 		const testHexCellBodyData = {
 			height: 12,
@@ -180,14 +179,14 @@ module.exports = class Engine {
 			bitmask: 'ui'
 		};
 		const testHexDepth44BodyData = {
-			height: 14,
+			height: 16,
 			width: 44,
 			velocity: {x: 0, y: 0},
 			sprite: 'hex-cell-44-height',
 			layer: 'elev:0',
 			bitmask: 'ui'
 		};
-		const waterElev = 3;
+		const waterElev = 10;
 		const testHexWaterBodyData = {
 			height: 12,
 			width: 21,
@@ -211,43 +210,48 @@ module.exports = class Engine {
 			console.log("clicked cell", "elevation:", self.hexCell.elevation);
 			highlightedElev = self.hexCell.elevation;
 		};
-		hexGridTest.eachMetaPoint((cell, x, y) => {
-			//console.log(hexGridTest.getCell(x, y).terrain);
+
+		mapData.eachDataPoint((cell, x, y, self) => {
+			if(x > 6 || y > 32) {
+				return;
+			}
+			const metaPoint = self.getMetaPoint(x, y);
 			const data = {
 				...testHexCell44BodyData,
 				x: x * testHexCell44BodyData.width + x + 80,
 				y: y * testHexCell44BodyData.height + 40
 			};
-			data.y += (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
+			data.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
 			data.x -= x * 13;
-			const elevation = Math.floor(randomFromTo(0, 9));
+			//const elevation = Math.floor(randomFromTo(0, 9));
+			const elevation = cell.elevation + 10;
 
-			data.y += -elevation * 2;
+			data.y += -elevation * 4;
 			data.layer = `elev:${elevation}`;
 
 			for(let d = 0; d <= elevation; d++) {
 				const depthData = {
 					...testHexDepth44BodyData,
 					x: x * testHexCell44BodyData.width + x + 80 - (x * 13),
-					y: y * testHexCell44BodyData.height + testHexDepth44BodyData.height + 40,
+					y: y * testHexCell44BodyData.height + testHexDepth44BodyData.height + 40 - 2,
 					layer: `elev:${d - 1}`
 				};
-				depthData.y += (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
-				depthData.y -= d * 2; // 2 is height/thickness of depth slice
+				depthData.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
+				depthData.y -= d * 4; // height/thickness of depth slice
 
 				const depthBody = new Body(depthData);
 				testWorldOne.addBodies(depthBody);
 			}
 
-			if(elevation < waterElev) {
+			if(elevation <= waterElev) {
 				const waterData = {
 					...testHexWater44BodyData,
 					x: x * testHexCell44BodyData.width + x + 80,
 					y: y * testHexCell44BodyData.height + 40
 				};
-				waterData.y += (cell.offset ? (testHexCell44BodyData.height / 2) : 0);
+				waterData.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
 				waterData.x -= x * 13;
-				waterData.y += -waterElev * 2;
+				waterData.y += -waterElev * 4;
 				const waterBody = new Body(waterData);
 				testWorldOne.addBodies(waterBody);
 			}
@@ -273,9 +277,17 @@ module.exports = class Engine {
 		testBodyTwo.addMouseInput('mousedown', {callback() {
 			console.log('clicked body');
 		}});
+		const engine = this;
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
 			//console.log('pressed e', self, key);
+			const vport = engine.viewports.getItem('test-viewport-2');
+			vport.updateView({x: vport.view.position.x, y: vport.view.position.y + 1});
 		}, key: 'e'});
+		testBodyThree.addKeyInput('keydown', {callback(self, key) {
+			//console.log('pressed e', self, key);
+			const vport = engine.viewports.getItem('test-viewport-2');
+			vport.updateView({x: vport.view.position.x, y: vport.view.position.y + 4});
+		}, key: 'd'});
 
 		//testViewportTwo.listener.disable();
 	}
@@ -285,7 +297,7 @@ module.exports = class Engine {
 
 		data.world = world;
 
-		this.viewports.addItem(new Viewport(data));
+		this.viewports.addItem(new Viewport(data), name);
 	}
 
 	removeViewport(name) {

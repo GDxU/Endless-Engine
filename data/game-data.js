@@ -7,7 +7,7 @@ const viewports = require('./viewports');
 const assignElevationLayers = (dataObj) => {
 	const baseLayer = 1000;
 
-	for(let i = -10; i < 11; i++) {
+	for(let i = -10; i < 41; i++) {
 		dataObj[`elev:${i}`] = 1000 + i;
 	}
 };

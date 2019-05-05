@@ -9,7 +9,7 @@ const images = {
 	'test-orange-hex-depth': {sheet: 'test-orange-hex-depth', x: 0, y: 0, w: 21, h: 7},
 	'test-orange-hex-water': {sheet: 'test-orange-hex-water', x: 0, y: 0, w: 21, h: 12},
 	'hex-cell-44-top': {sheet: 'hex-cell-44-top', x: 0, y: 0, w: 44, h: 26},
-	'hex-cell-44-height': {sheet: 'hex-cell-44-height', x: 0, y: 0, w: 44, h: 14},
+	'hex-cell-44-height': {sheet: 'hex-cell-44-height', x: 0, y: 0, w: 44, h: 16},
 	'hex-cell-44-water-top': {sheet: 'hex-cell-44-water-top', x: 0, y: 0, w: 44, h: 26}
 };
 
