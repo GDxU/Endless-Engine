@@ -23,7 +23,13 @@ module.exports = class Renderer {
 		} else if(layerA < layerB) {
 			return -1;
 		} else {
-			return 0;
+			if(bodyA.body.bounds.aabb[0].y > bodyB.body.bounds.aabb[0].y) {
+				return 1;
+			} else if(bodyA.body.bounds.aabb[0].y < bodyB.body.bounds.aabb[0].y) {
+				return -1;
+			} else {
+				return 0;
+			}
 		}
 	}
 

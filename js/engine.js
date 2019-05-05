@@ -224,7 +224,7 @@ module.exports = class Engine {
 			data.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
 			data.x -= x * 13;
 			//const elevation = Math.floor(randomFromTo(0, 9));
-			const elevation = cell.elevation + 10;
+			const elevation = cell.elevation + waterElev;
 
 			data.y += -elevation * 4;
 			data.layer = `elev:${elevation}`;
