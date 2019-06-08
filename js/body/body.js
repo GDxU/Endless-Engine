@@ -32,6 +32,7 @@ module.exports = class Body {
 		this.refreshSpriteFrame = false;
 		this.tethers = false;
 		this.bitmask = args.bitmask;
+		this.handle = "";
 	}
 
 	disableInput(eventName) {

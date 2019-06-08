@@ -5,6 +5,8 @@ const ACTIVE_AREA_WIDTH = 3;
 const ACTIVE_AREA_HEIGHT = 3;
 const HEX_TILE_WIDTH = 44;
 const HEX_TILE_HEIGHT = 26;
+const HEX_TILE_THICKNESS = 4;
+const KEY_DELIMITER = ",";
 
 const testHexCell44BodyData = {
 	height: 26,
@@ -37,7 +39,7 @@ const cellMousemoveCallback = (self, e) => {
 };
 const cellMousedownCallback = (self, e) => {
 	console.log("clicked cell", "elevation:", self.hexCell.elevation);
-	highlightedElev = self.hexCell.elevation;
+	//highlightedElev = self.hexCell.elevation;
 };
 
 module.exports = class MapInstantiator {
@@ -46,6 +48,7 @@ module.exports = class MapInstantiator {
 		this.lastRegions = {};
 		this.centerRegion = {};
 		this.world = world;
+		this.regionBodies = {};
 	}
 
 	update(x, y) {
@@ -67,10 +70,10 @@ module.exports = class MapInstantiator {
 						x: this.centerRegion.x + rX,
 						y: this.centerRegion.y + rY
 					};
-					const testCoordsKey = `${testCoords.x}-${testCoords.y}`;
+					const testCoordsKey = `${testCoords.x}${KEY_DELIMITER}${testCoords.y}`;
 
 					if(!this.lastRegions[testCoordsKey]) {
-						console.log("create region:", testCoordsKey);
+						console.log(`created region: (${testCoords.x},${testCoords.y})`);
 						this.createRegion(testCoords.x, testCoords.y);
 					}
 
@@ -78,10 +81,21 @@ module.exports = class MapInstantiator {
 				}
 			}
 
-			// check each lastRegion against new ones. For each mis-match, destroy that region
+			Object.keys(this.lastRegions).forEach(regionKey => {
+				if(!newRegions[regionKey]) {
+					const [destroyX, destroyY] = regionKey.split(KEY_DELIMITER);
+
+					this.destroyRegion(parseInt(destroyX), parseInt(destroyY));
+				}
+			});
 
 			this.lastRegions = newRegions;
+			console.log("new regions list", Object.keys(this.regionBodies));
 		}
+	}
+
+	static getRegionKey(x, y) {
+		return `${x}${KEY_DELIMITER}${y}`;
 	}
 
 	static getRegionTiles(x, y) {
@@ -111,8 +125,34 @@ module.exports = class MapInstantiator {
 		};
 	}
 
+	static findLowest(...vals) {
+		if(!vals.length) {
+			return false;
+		}
+
+		let lowest = vals[0];
+
+		vals.forEach(val => {
+			if(typeof(val) === "number" && val < lowest) {
+				lowest = val;
+			}
+		});
+
+		return lowest;
+	}
+
+	loadBody(body, regionKey) {
+		this.world.addBodies(body);
+		this.regionBodies[regionKey].push(body.handle);
+	}
+
 	createRegion(x, y) {
 		const tileCoords = this.constructor.getRegionTiles(x, y);
+		const regionKey = this.constructor.getRegionKey(x, y);
+
+		if(!this.regionBodies[regionKey]) {
+			this.regionBodies[regionKey] = [];
+		}
 
 		tileCoords.forEach(({x, y}) => {
 			if(!this.data.hasInternalPoint(x, y)) {
@@ -131,8 +171,37 @@ module.exports = class MapInstantiator {
 			data.x -= x * 13;
 			const elevation = cell.elevation + waterElev;
 
-			data.y += -elevation * 4;
+			data.y += -elevation * HEX_TILE_THICKNESS;
 			data.layer = `elev:${elevation}`;
+
+			let southElevDiff = 0;
+			const {s, se, sw} = metaPoint;
+			const lowestNeighborElev = this.constructor.findLowest(
+				(this.data.getDataPoint(s.x, s.y) || {}).elevation,
+				(this.data.getDataPoint(se.x, se.y) || {}).elevation,
+				(this.data.getDataPoint(sw.x, sw.y) || {}).elevation
+			);
+
+			if(lowestNeighborElev) {
+				southElevDiff = elevation - (lowestNeighborElev + waterElev);
+				southElevDiff = southElevDiff < 0 ? 0 : southElevDiff;
+			}
+
+			for(let d = elevation, floor = elevation - southElevDiff; d > floor; d--) {
+				const depthData = {
+					...testHexDepth44BodyData,
+					x: x * testHexCell44BodyData.width + x + 80 - (x * 13),
+					y: y * testHexCell44BodyData.height + testHexDepth44BodyData.height + 40 - 2,
+					layer: `elev:${d - 1}`
+				};
+
+				depthData.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
+				depthData.y -= d * HEX_TILE_THICKNESS;
+
+				const depthBody = new Body(depthData);
+
+				this.loadBody(depthBody, regionKey);
+			}
 
 			if(elevation <= waterElev) {
 				const waterData = {
@@ -142,21 +211,29 @@ module.exports = class MapInstantiator {
 				};
 				waterData.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
 				waterData.x -= x * 13;
-				waterData.y += -waterElev * 4;
+				waterData.y += -waterElev * HEX_TILE_THICKNESS;
 				const waterBody = new Body(waterData);
-				this.world.addBodies(waterBody);
+
+				this.loadBody(waterBody, regionKey);
 			}
 
 			const body = new Body(data);
 
-			this.world.addBodies(body);
+			this.loadBody(body, regionKey);
 
 			body.addMouseInput('mousemove', {callback: cellMousemoveCallback});
 			body.addMouseInput('mousedown', {callback: cellMousedownCallback, key: 'left'});
+			body.hexCell = cell;
 		});
 	}
 
-	destroyRegion() {
+	destroyRegion(x, y) {
+		const regionKey = this.constructor.getRegionKey(x, y);
 
+		this.regionBodies[regionKey].forEach(bodyHandle => {
+			this.world.removeBodies(bodyHandle);
+		});
+
+		delete this.regionBodies[regionKey];
 	}
 };

@@ -22,18 +22,17 @@ module.exports = class World {
 	}
 
 	addBodies(...bodies) {
-		bodies.forEach((body) => {
-			this.bodies.addItem(body)
+		bodies.forEach(body => {
+			const handle = this.bodies.addItem(body);
 
 			body.world = this;
+			body.handle = handle;
 		});
 	}
 
-	/*
-	removeBodies(...bodies) {
-		bodies.forEach((body) => {
-			this.bodies.removeItem(body)
+	removeBodies(...handles) {
+		handles.forEach(handle => {
+			this.bodies.removeItem(handle);
 		});
 	}
-	*/
 };

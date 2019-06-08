@@ -152,6 +152,8 @@ module.exports = class Engine {
 		const mi = new MapInstantiator(mapData, testWorldOne); // viewport must be added before instantiation
 		mi.update(0, 0);
 
+		/*
+		const waterElev = 10;
 		const testHexCellBodyData = {
 			height: 12,
 			width: 21,
@@ -177,6 +179,7 @@ module.exports = class Engine {
 			layer: `elev:${waterElev}`,
 			bitmask: 'ui'
 		};
+		*/
 
 		testBodyOne.addMouseInput('mousemove', {callback(self, e) {
 			console.log('mouse moving 1');
@@ -197,9 +200,10 @@ module.exports = class Engine {
 			vport.updateView({x: vport.view.position.x, y: vport.view.position.y + 1});
 		}, key: 'e'});
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
-			//console.log('pressed e', self, key);
+			console.log('pressed d');
 			const vport = engine.viewports.getItem('test-viewport-2');
 			vport.updateView({x: vport.view.position.x, y: vport.view.position.y + 4});
+			mi.update(vport.view.position.x, vport.view.position.y);
 		}, key: 'd'});
 
 		//testViewportTwo.listener.disable();
