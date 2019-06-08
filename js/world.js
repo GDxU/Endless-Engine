@@ -28,4 +28,12 @@ module.exports = class World {
 			body.world = this;
 		});
 	}
+
+	/*
+	removeBodies(...bodies) {
+		bodies.forEach((body) => {
+			this.bodies.removeItem(body)
+		});
+	}
+	*/
 };
