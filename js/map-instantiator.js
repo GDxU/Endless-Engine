@@ -4,34 +4,46 @@ const REGION_SIZE = 10;
 const ACTIVE_AREA_WIDTH = 3;
 const ACTIVE_AREA_HEIGHT = 3;
 const HEX_TILE_WIDTH = 44;
+const HEX_TILE_INTERLOCK_WIDTH = 32;
 const HEX_TILE_HEIGHT = 26;
+const HALF_HEX_TILE_HEIGHT = 13;
+const HEX_DEPTH_TILE_HEIGHT = 16;
 const HEX_TILE_THICKNESS = 4;
 const KEY_DELIMITER = ",";
+const WATER_ELEV_OFFSET = 10;
 
 const testHexCell44BodyData = {
-	height: 26,
-	width: 44,
+	height: HEX_TILE_HEIGHT,
+	width: HEX_TILE_WIDTH,
 	chamfer: 12,
 	velocity: {x: 0, y: 0},
 	sprite: 'hex-cell-44-top',
 	layer: 'elev:0',
 	bitmask: 'ui'
 };
+const testHexCell44SeafloorData = {
+	height: HEX_TILE_HEIGHT,
+	width: HEX_TILE_WIDTH,
+	chamfer: 12,
+	velocity: {x: 0, y: 0},
+	sprite: '',
+	layer: 'elev:0',
+	bitmask: 'ui'
+};
 const testHexDepth44BodyData = {
-	height: 16,
-	width: 44,
+	height: HEX_DEPTH_TILE_HEIGHT,
+	width: HEX_TILE_WIDTH,
 	velocity: {x: 0, y: 0},
 	sprite: 'hex-cell-44-height',
 	layer: 'elev:0',
 	bitmask: 'ui'
 };
-const waterElev = 10;
 const testHexWater44BodyData = {
-	height: 26,
-	width: 44,
+	height: HEX_TILE_HEIGHT,
+	width: HEX_TILE_WIDTH,
 	velocity: {x: 0, y: 0},
 	sprite: 'hex-cell-44-water-top',
-	layer: `elev:${waterElev}`,
+	layer: `elev:${WATER_ELEV_OFFSET}`,
 	bitmask: 'ui'
 };
 const cellMousemoveCallback = (self, e) => {
@@ -41,6 +53,50 @@ const cellMousedownCallback = (self, e) => {
 	console.log("clicked cell", "elevation:", self.hexCell.elevation);
 	//highlightedElev = self.hexCell.elevation;
 };
+
+const seafloorData = {};
+const biomeData = {};
+
+for(let i = 1; i <= 9; i++) {
+	seafloorData[`elev-${i}`] = {
+		...testHexCell44SeafloorData,
+		sprite: `hex-cell-44-seafloor-${i}-top`
+	};
+}
+
+const terrains = [
+	'boreal',
+	'desert',
+	'evergreen',
+	'grassland',
+	'hot-desert',
+	'ice',
+	'moonscape',
+	'savanna',
+	'scrubland',
+	'shrubland',
+	'temp-forest',
+	'trop-forest',
+	'tundra',
+	'woodland'
+];
+const terrainConversionKey = {
+	'boreal forest': 'boreal',
+	'evergreen forest': 'evergreen',
+	'hot desert': 'hot-desert',
+	'temperate rainforest': 'temp-forest',
+	'tropical rainforest': 'trop-forest'
+};
+
+for(let i = 0; i < terrains.length; i++) {
+	const terrain = terrains[i];
+
+	biomeData[terrain] = {
+		...testHexCell44BodyData,
+		sprite: `hex-cell-44-${terrain}-top`
+	};
+}
+
 
 module.exports = class MapInstantiator {
 	constructor(mapData, world) {
@@ -70,10 +126,9 @@ module.exports = class MapInstantiator {
 						x: this.centerRegion.x + rX,
 						y: this.centerRegion.y + rY
 					};
-					const testCoordsKey = `${testCoords.x}${KEY_DELIMITER}${testCoords.y}`;
+					const testCoordsKey = this.constructor.getRegionKey(testCoords.x, testCoords.y);
 
 					if(!this.lastRegions[testCoordsKey]) {
-						console.log(`created region: (${testCoords.x},${testCoords.y})`);
 						this.createRegion(testCoords.x, testCoords.y);
 					}
 
@@ -90,7 +145,6 @@ module.exports = class MapInstantiator {
 			});
 
 			this.lastRegions = newRegions;
-			console.log("new regions list", Object.keys(this.regionBodies));
 		}
 	}
 
@@ -114,7 +168,7 @@ module.exports = class MapInstantiator {
 	}
 
 	static convertPositionToRegion(x, y) {
-		const tileX = Math.floor(x / HEX_TILE_WIDTH);
+		const tileX = Math.floor(x / HEX_TILE_INTERLOCK_WIDTH);
 		const tileY = Math.floor(y / HEX_TILE_HEIGHT);
 		const regionX = Math.floor(tileX / REGION_SIZE);
 		const regionY = Math.floor(tileY / REGION_SIZE);
@@ -143,7 +197,7 @@ module.exports = class MapInstantiator {
 
 	loadBody(body, regionKey) {
 		this.world.addBodies(body);
-		this.regionBodies[regionKey].push(body.handle);
+		this.regionBodies[regionKey].push(body.id);
 	}
 
 	createRegion(x, y) {
@@ -154,44 +208,46 @@ module.exports = class MapInstantiator {
 			this.regionBodies[regionKey] = [];
 		}
 
-		tileCoords.forEach(({x, y}) => {
-			if(!this.data.hasInternalPoint(x, y)) {
+		tileCoords.forEach(tileCoord => {
+			const {x, y} = tileCoord;
+
+			if(!tileCoord || !this.data.hasInternalPoint(x, y)) {
 				return;
 			}
 
 			const cell = this.data.getDataPoint(x, y);
 			const metaPoint = this.data.getMetaPoint(x, y);
-
+			const elevation = cell.elevation + WATER_ELEV_OFFSET;
 			const data = {
-				...testHexCell44BodyData,
-				x: x * testHexCell44BodyData.width + x + 80,
-				y: y * testHexCell44BodyData.height + 40
+				...(cell.elevation > 0 ? biomeData[`${terrainConversionKey[cell.biome] || cell.biome}`] : seafloorData[`elev-${Math.abs(cell.elevation)}`]),
+				x: x * testHexCell44BodyData.width + x,
+				y: y * testHexCell44BodyData.height
 			};
-			data.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
-			data.x -= x * 13;
-			const elevation = cell.elevation + waterElev;
 
+			data.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
+			data.x -= x * HALF_HEX_TILE_HEIGHT;
 			data.y += -elevation * HEX_TILE_THICKNESS;
 			data.layer = `elev:${elevation}`;
 
-			let southElevDiff = 0;
+			let southElevDiff = elevation;
 			const {s, se, sw} = metaPoint;
 			const lowestNeighborElev = this.constructor.findLowest(
-				(this.data.getDataPoint(s.x, s.y) || {}).elevation,
-				(this.data.getDataPoint(se.x, se.y) || {}).elevation,
-				(this.data.getDataPoint(sw.x, sw.y) || {}).elevation
+				(s ? this.data.getDataPoint(s.x, s.y) : {}).elevation,
+				(se ? this.data.getDataPoint(se.x, se.y) : {}).elevation,
+				(sw ? this.data.getDataPoint(sw.x, sw.y) : {}).elevation,
 			);
 
-			if(lowestNeighborElev) {
-				southElevDiff = elevation - (lowestNeighborElev + waterElev);
+			if(lowestNeighborElev && s && sw.x < x && se.x > x) {
+				southElevDiff = elevation - (lowestNeighborElev + WATER_ELEV_OFFSET);
 				southElevDiff = southElevDiff < 0 ? 0 : southElevDiff;
 			}
 
 			for(let d = elevation, floor = elevation - southElevDiff; d > floor; d--) {
+				// TODO: have blue depth pieces for sub-zero elevation (9 or 10 shades), but not if on bottom edge
 				const depthData = {
 					...testHexDepth44BodyData,
-					x: x * testHexCell44BodyData.width + x + 80 - (x * 13),
-					y: y * testHexCell44BodyData.height + testHexDepth44BodyData.height + 40 - 2,
+					x: x * testHexCell44BodyData.width + x - (x * HALF_HEX_TILE_HEIGHT),
+					y: y * testHexCell44BodyData.height + testHexDepth44BodyData.height - 2,
 					layer: `elev:${d - 1}`
 				};
 
@@ -203,15 +259,17 @@ module.exports = class MapInstantiator {
 				this.loadBody(depthBody, regionKey);
 			}
 
-			if(elevation <= waterElev) {
+			if(elevation <= WATER_ELEV_OFFSET) {
 				const waterData = {
 					...testHexWater44BodyData,
-					x: x * testHexCell44BodyData.width + x + 80,
-					y: y * testHexCell44BodyData.height + 40
+					x: x * testHexCell44BodyData.width + x,
+					y: y * testHexCell44BodyData.height
 				};
+
 				waterData.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
-				waterData.x -= x * 13;
-				waterData.y += -waterElev * HEX_TILE_THICKNESS;
+				waterData.x -= x * HALF_HEX_TILE_HEIGHT;
+				waterData.y += -WATER_ELEV_OFFSET * HEX_TILE_THICKNESS;
+
 				const waterBody = new Body(waterData);
 
 				this.loadBody(waterBody, regionKey);
@@ -223,6 +281,7 @@ module.exports = class MapInstantiator {
 
 			body.addMouseInput('mousemove', {callback: cellMousemoveCallback});
 			body.addMouseInput('mousedown', {callback: cellMousedownCallback, key: 'left'});
+
 			body.hexCell = cell;
 		});
 	}
@@ -230,8 +289,8 @@ module.exports = class MapInstantiator {
 	destroyRegion(x, y) {
 		const regionKey = this.constructor.getRegionKey(x, y);
 
-		this.regionBodies[regionKey].forEach(bodyHandle => {
-			this.world.removeBodies(bodyHandle);
+		this.regionBodies[regionKey].forEach(bodyId => {
+			this.world.removeBodies(bodyId);
 		});
 
 		delete this.regionBodies[regionKey];

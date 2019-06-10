@@ -18,6 +18,10 @@ const List = function(maxItems = false) {
 		return (_currentIndex + 1 < _items.length);
 	};
 
+	_self.getOrder = function() {
+		return _order;
+	};
+
 	/**
 	 *
 	 *
@@ -55,13 +59,16 @@ const List = function(maxItems = false) {
 	 * @param		{boolean}		disabled		Allows added item to be disabled upon addition
 	 */
 	_self.addItem = function(item, handle = false, position = false, disable = false) {
+		if( handle && _self.getItem(handle) ) {
+			return;
+		}
 		if( _maxItems ) {
 			if( _self.countItems() > _maxItems ) {
 				return false;
 			}
 		}
 
-		var generatedHandle = 'item-' + _itemCounter;
+		let generatedHandle = 'item-' + _itemCounter;
 
 		// Use custom item handle if provided
 		if( handle ) {
@@ -94,11 +101,14 @@ const List = function(maxItems = false) {
 	 * @param		{string}	handle	The item's handle
 	 * @return	{object}
 	 */
-	_self.removeItem = function(handle) {
+	_self.removeItem = function(handleArg) {
+		const handle = String(handleArg);
+
 		if( _items.hasOwnProperty(handle) ) {
 			delete _items[handle];
 		}
 
+		/*
 		var orderIndex = _order.indexOf(handle);
 
 		if( orderIndex != -1 ) {
@@ -110,6 +120,22 @@ const List = function(maxItems = false) {
 			if( _currentIndex + 1 > _items.length ) {
 				_currentIndex--;
 			}
+		}
+		*/
+
+		let orderIndex = _order.indexOf(handle);
+
+		while( orderIndex != -1 ) {
+			_order.splice(orderIndex, 1);
+
+			if( orderIndex < _currentIndex ) {
+				_currentIndex--;
+			}
+			if( _currentIndex + 1 > _items.length ) {
+				_currentIndex--;
+			}
+
+			orderIndex = _order.indexOf(handle)
 		}
 	};
 
@@ -173,8 +199,8 @@ const List = function(maxItems = false) {
 		// Sort the items before passing them to the callback function
 		sortLoop:
 		for(var handle in _items) {
-			var position	= _order.indexOf(handle);
-			var item		= _items[handle];
+			var position = _order.indexOf(handle);
+			var item = _items[handle];
 
 			if( !skipBlacklist ) {
 				if( _self.isDisabled(handle) ) {
@@ -196,7 +222,9 @@ const List = function(maxItems = false) {
 	 * @param		{string}	handle	The item's handle
 	 * @return	{object}			Returns false if no item by that handle exists
 	 */
-	_self.getItem = function(handle) {
+	_self.getItem = function(handleArg) {
+		const handle = String(handleArg);
+
 		if( _items.hasOwnProperty(handle) ) {
 			return _items[handle];
 		}

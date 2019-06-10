@@ -21,21 +21,21 @@ const BODY_LISTS = [
 
 module.exports = class Listener {
 	constructor(viewport) {
-		this.viewport					= viewport;
-		this.cursorVportPosition	= {x: 0, y: 0};
-		this.mouseDown					= false;
-		this.mouseButton				= false;
-		this.direction					= false;
-		this.enabled					= true;
+		this.viewport = viewport;
+		this.cursorVportPosition = {x: 0, y: 0};
+		this.mouseDown = false;
+		this.mouseButton = false;
+		this.direction = false;
+		this.enabled = true;
 
 		BODY_LISTS.forEach((listName) => {
 			this[listName] = new List();
 		});
 
-		window.addEventListener(MOUSE_DOWN,		this.mouseDownInput.bind(this));
-		window.addEventListener(MOUSE_UP,		this.mouseUpInput.bind(this));
-		window.addEventListener(MOUSE_WHEEL,	this.mouseWheelInput.bind(this));
-		window.addEventListener(MOUSE_MOVE,		this.mouseMove.bind(this));
+		window.addEventListener(MOUSE_DOWN, this.mouseDownInput.bind(this));
+		window.addEventListener(MOUSE_UP, this.mouseUpInput.bind(this));
+		window.addEventListener(MOUSE_WHEEL, this.mouseWheelInput.bind(this));
+		window.addEventListener(MOUSE_MOVE, this.mouseMove.bind(this));
 	}
 
 	enable() {
@@ -243,7 +243,7 @@ module.exports = class Listener {
 	}
 
 	removeBody(body) {
-		BODY_LISTS.forEach((listName) => {
+		BODY_LISTS.forEach(listName => {
 			this[listName].removeItem(body.id);
 		});
 	}

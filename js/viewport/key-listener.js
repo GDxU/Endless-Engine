@@ -13,15 +13,15 @@ const BODY_LISTS = [
 
 module.exports = class KeyListener {
 	constructor(viewport) {
-		this.viewport					= viewport;
-		this.enabled					= true;
+		this.viewport = viewport;
+		this.enabled = true;
 
 		BODY_LISTS.forEach(listName => {
 			this[listName] = new List();
 		});
 
-		window.addEventListener(KEY_DOWN,		this.keyInput.bind(this));
-		window.addEventListener(KEY_UP,			this.keyInput.bind(this));
+		window.addEventListener(KEY_DOWN, this.keyInput.bind(this));
+		window.addEventListener(KEY_UP, this.keyInput.bind(this));
 	}
 
 	enable() {
@@ -85,7 +85,7 @@ module.exports = class KeyListener {
 	}
 
 	removeBody(body) {
-		BODY_LISTS.forEach((listName) => {
+		BODY_LISTS.forEach(listName => {
 			this[listName].removeItem(body.id);
 		});
 	}

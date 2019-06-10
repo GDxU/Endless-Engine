@@ -23,16 +23,18 @@ module.exports = class World {
 
 	addBodies(...bodies) {
 		bodies.forEach(body => {
-			const handle = this.bodies.addItem(body);
+			this.bodies.addItem(body, body.id);
 
 			body.world = this;
-			body.handle = handle;
 		});
 	}
 
-	removeBodies(...handles) {
-		handles.forEach(handle => {
-			this.bodies.removeItem(handle);
+	removeBodies(...values) {
+		values.forEach(value => {
+			const removableBody = typeof(value) === "object" ? value : this.bodies.getItem(value);
+
+			removableBody.removeInputs();
+			this.bodies.removeItem(removableBody.id);
 		});
 	}
 };

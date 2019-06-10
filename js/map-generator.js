@@ -34,9 +34,9 @@ const biomeColorMap = {
 	'boreal forest': '#129b50',
 	'desert': '#d19955',
 	'evergreen forest': '#117569',
+	'grassland': '#8caa63',
 	'hot desert': '#ef7b2d',
 	'ice': '#f3f3ff',
-	'grassland': '#8caa63',
 	'moonscape': '#9090a9',
 	'savanna': '#c3e291',
 	'scrubland': '#c9c07a',
@@ -270,6 +270,7 @@ class MapGenerator {
 		this.adjustMoistureFromAirCurrents();
 		this.adjustMoistureFromElevation();
 		this.adjustTemperatureFromElevation();
+		this.setBiomes();
 
 
 		this.print();
@@ -1399,6 +1400,11 @@ class MapGenerator {
 			}
 		});
 	}
+	setBiomes() {
+		this.grid.eachDataPoint((dataPoint, x, y, self) => {
+			dataPoint.biome = this.getBiomeHex(dataPoint);
+		});
+	}
 	getBiomeHex(dataPoint) {
 		const valueMax = 100;
 		//const numValueBuckets = 5;
@@ -1439,9 +1445,10 @@ class MapGenerator {
 			moistureIndex = numMoistureValueBuckets - 1;
 		}
 
-		const type = biomeMatrix[temperatureIndex][moistureIndex];
+		return biomeMatrix[temperatureIndex][moistureIndex];
 
-		return biomeColorMap[type];
+		//dataPoint.biome = type;
+		//return biomeColorMap[type];
 	}
 	print() {
 		const VIS_TILE_SIZE = 5;
@@ -1603,7 +1610,8 @@ class MapGenerator {
 			let specialHex;
 
 			if(dataPoint.land) {
-				biomeHex = this.getBiomeHex(dataPoint);
+				//biomeHex = this.getBiomeHex(dataPoint);
+				biomeHex = biomeColorMap[dataPoint.biome];
 				elevationHex = elevationColorKey[dataPoint.elevation];
 				moistureHex = moistureColorKey[dataPoint.moisture];
 				temperatureHex = temperatureColorKey[dataPoint.temperature];

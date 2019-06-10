@@ -1,4 +1,4 @@
-module.exports = {
+const data = {
 	'test-sprite-1': 	{
 		ticksPerFrame: 55,
 		sync: true,
@@ -114,3 +114,58 @@ module.exports = {
 		}
 	}
 };
+
+for(let i = 1; i <= 9; i++) {
+	data[`hex-cell-44-seafloor-${i}-top`] = {
+		ticksPerFrame: 10,
+		loop: false,
+		tiled: false,
+		padding: 0,
+		layer: 'layer-2',
+		frameData: {
+			'normal': {
+				'e': {
+					frames: [`hex-cell-44-seafloor-${i}-top`]
+				}
+			}
+		}
+	};
+}
+
+const terrains = [
+	'boreal',
+	'desert',
+	'evergreen',
+	'grassland',
+	'hot-desert',
+	'ice',
+	'moonscape',
+	'savanna',
+	'scrubland',
+	'shrubland',
+	'temp-forest',
+	'trop-forest',
+	'tundra',
+	'woodland'
+];
+
+for(let i = 0; i < terrains.length; i++) {
+	const terrain = terrains[i];
+
+	data[`hex-cell-44-${terrain}-top`] = {
+		ticksPerFrame: 10,
+		loop: false,
+		tiled: false,
+		padding: 0,
+		layer: 'layer-2',
+		frameData: {
+			'normal': {
+				'e': {
+					frames: [`hex-cell-44-${terrain}-top`]
+				}
+			}
+		}
+	};
+}
+
+module.exports = data;

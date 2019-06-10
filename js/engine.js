@@ -36,7 +36,6 @@ module.exports = class Engine {
 		};
 
 		const mapData = mapGenerator.generate(500, 250);
-		//const mapData = mapGenerator.generate(130, 130);
 
 		decodeImages(onComplete);
 
@@ -146,40 +145,17 @@ module.exports = class Engine {
 		this.addViewport('test-viewport-1', testWorldOne);
 		this.addViewport('test-viewport-2', testWorldOne);
 
-		const hexGridTest = new HexGrid(10, 10);
-		hexGridTest.populate(60).setMetaRelationships();
-
 		const mi = new MapInstantiator(mapData, testWorldOne); // viewport must be added before instantiation
 		mi.update(0, 0);
 
-		/*
-		const waterElev = 10;
-		const testHexCellBodyData = {
-			height: 12,
-			width: 21,
-			chamfer: 5,
-			velocity: {x: 0, y: 0},
-			sprite: 'test-orange-hex',
-			layer: 'elev:0',
-			bitmask: 'ui'
-		};
-		const testHexDepthBodyData = {
-			height: 7,
-			width: 21,
-			velocity: {x: 0, y: 0},
-			sprite: 'test-orange-hex-depth',
-			layer: 'elev:0',
-			bitmask: 'ui'
-		};
-		const testHexWaterBodyData = {
-			height: 12,
-			width: 21,
-			velocity: {x: 0, y: 0},
-			sprite: 'test-orange-hex-water',
-			layer: `elev:${waterElev}`,
-			bitmask: 'ui'
-		};
-		*/
+		setTimeout(() => {
+			/*
+			mi.update(1500, 0);
+
+			const vport = engine.viewports.getItem('test-viewport-2');
+			vport.updateView({x: 1500, y: 0});
+			*/
+		}, 1500);
 
 		testBodyOne.addMouseInput('mousemove', {callback(self, e) {
 			console.log('mouse moving 1');
@@ -195,16 +171,25 @@ module.exports = class Engine {
 		}});
 		const engine = this;
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
-			//console.log('pressed e', self, key);
 			const vport = engine.viewports.getItem('test-viewport-2');
-			vport.updateView({x: vport.view.position.x, y: vport.view.position.y + 1});
-		}, key: 'e'});
+			vport.updateView({x: vport.view.position.x, y: vport.view.position.y + 20});
+			mi.update(vport.view.position.x, vport.view.position.y);
+		}, key: 's'});
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
-			console.log('pressed d');
 			const vport = engine.viewports.getItem('test-viewport-2');
-			vport.updateView({x: vport.view.position.x, y: vport.view.position.y + 4});
+			vport.updateView({x: vport.view.position.x, y: vport.view.position.y - 20});
+			mi.update(vport.view.position.x, vport.view.position.y);
+		}, key: 'w'});
+		testBodyThree.addKeyInput('keydown', {callback(self, key) {
+			const vport = engine.viewports.getItem('test-viewport-2');
+			vport.updateView({x: vport.view.position.x + 20, y: vport.view.position.y});
 			mi.update(vport.view.position.x, vport.view.position.y);
 		}, key: 'd'});
+		testBodyThree.addKeyInput('keydown', {callback(self, key) {
+			const vport = engine.viewports.getItem('test-viewport-2');
+			vport.updateView({x: vport.view.position.x - 20, y: vport.view.position.y});
+			mi.update(vport.view.position.x, vport.view.position.y);
+		}, key: 'a'});
 
 		//testViewportTwo.listener.disable();
 	}

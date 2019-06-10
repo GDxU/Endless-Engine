@@ -13,6 +13,33 @@ const images = {
 	'hex-cell-44-water-top': {sheet: 'hex-cell-44-water-top', x: 0, y: 0, w: 44, h: 26}
 };
 
+for(let i = 1; i <= 9; i++) {
+	images[`hex-cell-44-seafloor-${i}-top`] = {sheet: `hex-cell-44-seafloor-${i}-top`, x: 0, y: 0, w: 44, h: 26};
+}
+
+const terrains = [
+	'boreal',
+	'desert',
+	'evergreen',
+	'grassland',
+	'hot-desert',
+	'ice',
+	'moonscape',
+	'savanna',
+	'scrubland',
+	'shrubland',
+	'temp-forest',
+	'trop-forest',
+	'tundra',
+	'woodland'
+];
+
+for(let i = 0; i < terrains.length; i++) {
+	const terrain = terrains[i];
+
+	images[`hex-cell-44-${terrain}-top`] = {sheet: `hex-cell-44-${terrain}-top`, x: 0, y: 0, w: 44, h: 26};
+}
+
 Object.keys(fonts).forEach(name => {
 	importFont(images, name, fonts[name]);
 });

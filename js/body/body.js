@@ -32,7 +32,6 @@ module.exports = class Body {
 		this.refreshSpriteFrame = false;
 		this.tethers = false;
 		this.bitmask = args.bitmask;
-		this.handle = "";
 	}
 
 	disableInput(eventName) {
@@ -110,5 +109,20 @@ module.exports = class Body {
 		}
 
 		return {};
+	}
+
+	removeInput() {
+
+	}
+
+	removeInputs() {
+		this.world.viewports.eachItem(viewport => {
+			if(viewport.mouseListener) {
+				viewport.mouseListener.removeBody(this);
+			}
+			if(viewport.keyListener) {
+				viewport.keyListener.removeBody(this);
+			}
+		});
 	}
 }
