@@ -1,6 +1,6 @@
 const Body = require('./body/body');
 
-const REGION_SIZE = 10;
+const REGION_SIZE = 9;
 const ACTIVE_AREA_WIDTH = 3;
 const ACTIVE_AREA_HEIGHT = 3;
 const HEX_TILE_WIDTH = 44;
@@ -200,6 +200,39 @@ module.exports = class MapInstantiator {
 		this.regionBodies[regionKey].push(body.id);
 	}
 
+	static getTopData(x, y, {biome, elevation, offset}) {
+		const waterElevation = elevation + WATER_ELEV_OFFSET
+		const depthAdj = -waterElevation * HEX_TILE_THICKNESS + (offset ? HALF_HEX_TILE_HEIGHT : 0);
+		const offsetAdj = x * HALF_HEX_TILE_HEIGHT;
+
+		return {
+			...(elevation > 0 ? biomeData[`${terrainConversionKey[biome] || biome}`] : seafloorData[`elev-${Math.abs(elevation)}`]),
+			x: x * testHexCell44BodyData.width + x - offsetAdj,
+			y: y * testHexCell44BodyData.height + depthAdj,
+			layer: `elev:${waterElevation}`
+		};
+	}
+
+	static getDepthData(x, y, d, {offset}) {
+		const yOffsetAdj = offset ? HALF_HEX_TILE_HEIGHT : 0;
+		const yDepthAdj = d * HEX_TILE_THICKNESS;
+
+		return {
+			...testHexDepth44BodyData,
+			x: x * testHexCell44BodyData.width + x - (x * HALF_HEX_TILE_HEIGHT),
+			y: y * testHexCell44BodyData.height + testHexDepth44BodyData.height - 2 + yOffsetAdj - yDepthAdj,
+			layer: `elev:${d - 1}`
+		};
+	}
+
+	static getWaterData(x, y, {offset}) {
+		return {
+			...testHexWater44BodyData,
+			x: x * testHexCell44BodyData.width + x - (x * HALF_HEX_TILE_HEIGHT),
+			y: y * testHexCell44BodyData.height + (-WATER_ELEV_OFFSET * HEX_TILE_THICKNESS) + (offset ? HALF_HEX_TILE_HEIGHT : 0)
+		};
+	}
+
 	createRegion(x, y) {
 		const tileCoords = this.constructor.getRegionTiles(x, y);
 		const regionKey = this.constructor.getRegionKey(x, y);
@@ -218,16 +251,11 @@ module.exports = class MapInstantiator {
 			const cell = this.data.getDataPoint(x, y);
 			const metaPoint = this.data.getMetaPoint(x, y);
 			const elevation = cell.elevation + WATER_ELEV_OFFSET;
-			const data = {
-				...(cell.elevation > 0 ? biomeData[`${terrainConversionKey[cell.biome] || cell.biome}`] : seafloorData[`elev-${Math.abs(cell.elevation)}`]),
-				x: x * testHexCell44BodyData.width + x,
-				y: y * testHexCell44BodyData.height
-			};
-
-			data.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
-			data.x -= x * HALF_HEX_TILE_HEIGHT;
-			data.y += -elevation * HEX_TILE_THICKNESS;
-			data.layer = `elev:${elevation}`;
+			const data = this.constructor.getTopData(x, y, {
+				biome: cell.biome,
+				elevation: cell.elevation,
+				offset: metaPoint.offset
+			});
 
 			let southElevDiff = elevation;
 			const {s, se, sw} = metaPoint;
@@ -244,32 +272,18 @@ module.exports = class MapInstantiator {
 
 			for(let d = elevation, floor = elevation - southElevDiff; d > floor; d--) {
 				// TODO: have blue depth pieces for sub-zero elevation (9 or 10 shades), but not if on bottom edge
-				const depthData = {
-					...testHexDepth44BodyData,
-					x: x * testHexCell44BodyData.width + x - (x * HALF_HEX_TILE_HEIGHT),
-					y: y * testHexCell44BodyData.height + testHexDepth44BodyData.height - 2,
-					layer: `elev:${d - 1}`
-				};
-
-				depthData.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
-				depthData.y -= d * HEX_TILE_THICKNESS;
-
+				const depthData = this.constructor.getDepthData(x, y, d, {
+					offset: metaPoint.offset
+				});
 				const depthBody = new Body(depthData);
 
 				this.loadBody(depthBody, regionKey);
 			}
 
 			if(elevation <= WATER_ELEV_OFFSET) {
-				const waterData = {
-					...testHexWater44BodyData,
-					x: x * testHexCell44BodyData.width + x,
-					y: y * testHexCell44BodyData.height
-				};
-
-				waterData.y += (metaPoint.offset ? (testHexCell44BodyData.height / 2) : 0);
-				waterData.x -= x * HALF_HEX_TILE_HEIGHT;
-				waterData.y += -WATER_ELEV_OFFSET * HEX_TILE_THICKNESS;
-
+				const waterData = this.constructor.getWaterData(x, y, {
+					offset: metaPoint.offset
+				});
 				const waterBody = new Body(waterData);
 
 				this.loadBody(waterBody, regionKey);

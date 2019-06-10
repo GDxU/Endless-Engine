@@ -173,22 +173,22 @@ module.exports = class Engine {
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
 			const vport = engine.viewports.getItem('test-viewport-2');
 			vport.updateView({x: vport.view.position.x, y: vport.view.position.y + 20});
-			mi.update(vport.view.position.x, vport.view.position.y);
+			mi.update(vport.view.position.x + Math.floor(vport.width / 2), vport.view.position.y + Math.floor(vport.height / 2));
 		}, key: 's'});
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
 			const vport = engine.viewports.getItem('test-viewport-2');
 			vport.updateView({x: vport.view.position.x, y: vport.view.position.y - 20});
-			mi.update(vport.view.position.x, vport.view.position.y);
+			mi.update(vport.view.position.x + Math.floor(vport.width / 2), vport.view.position.y + Math.floor(vport.height / 2));
 		}, key: 'w'});
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
 			const vport = engine.viewports.getItem('test-viewport-2');
 			vport.updateView({x: vport.view.position.x + 20, y: vport.view.position.y});
-			mi.update(vport.view.position.x, vport.view.position.y);
+			mi.update(vport.view.position.x + Math.floor(vport.width / 2), vport.view.position.y + Math.floor(vport.height / 2));
 		}, key: 'd'});
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
 			const vport = engine.viewports.getItem('test-viewport-2');
 			vport.updateView({x: vport.view.position.x - 20, y: vport.view.position.y});
-			mi.update(vport.view.position.x, vport.view.position.y);
+			mi.update(vport.view.position.x + Math.floor(vport.width / 2), vport.view.position.y + Math.floor(vport.height / 2));
 		}, key: 'a'});
 
 		//testViewportTwo.listener.disable();
