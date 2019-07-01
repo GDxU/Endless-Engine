@@ -21,6 +21,15 @@ const testHexCell44BodyData = {
 	layer: 'elev:0',
 	bitmask: 'ui'
 };
+const testHexCell44BodyHighlightData = {
+	height: HEX_TILE_HEIGHT,
+	width: HEX_TILE_WIDTH,
+	chamfer: 12,
+	velocity: {x: 0, y: 0},
+	sprite: 'hex-cell-44-highlight-top',
+	layer: 'elev:0',
+	bitmask: 'ui'
+};
 const testHexCell44SeafloorData = {
 	height: HEX_TILE_HEIGHT,
 	width: HEX_TILE_WIDTH,
@@ -30,7 +39,7 @@ const testHexCell44SeafloorData = {
 	layer: 'elev:0',
 	bitmask: 'ui'
 };
-const testHexDepth44BodyData = {
+const testHexWall44BodyData = {
 	height: HEX_DEPTH_TILE_HEIGHT,
 	width: HEX_TILE_WIDTH,
 	velocity: {x: 0, y: 0},
@@ -56,6 +65,7 @@ const cellMousedownCallback = (self, e) => {
 
 const seafloorData = {};
 const biomeData = {};
+const wallData = {};
 
 for(let i = 1; i <= 9; i++) {
 	seafloorData[`elev-${i}`] = {
@@ -80,6 +90,17 @@ const terrains = [
 	'tundra',
 	'woodland'
 ];
+const terrainWalls = [
+	'boreal',
+	'desert',
+	'hot-desert',
+	'ice',
+	'moonscape',
+	'savanna',
+	'scrubland',
+	'shrubland',
+	'tundra'
+];
 const terrainConversionKey = {
 	'boreal forest': 'boreal',
 	'evergreen forest': 'evergreen',
@@ -94,6 +115,14 @@ for(let i = 0; i < terrains.length; i++) {
 	biomeData[terrain] = {
 		...testHexCell44BodyData,
 		sprite: `hex-cell-44-${terrain}-top`
+	};
+}
+for(let i = 0; i < terrainWalls.length; i++) {
+	const terrainWall = terrainWalls[i];
+
+	wallData[terrainWall] = {
+		...testHexWall44BodyData,
+		sprite: `hex-cell-44-${terrainWall}-wall`
 	};
 }
 
@@ -213,14 +242,15 @@ module.exports = class MapInstantiator {
 		};
 	}
 
-	static getDepthData(x, y, d, {offset}) {
+	static getDepthData(x, y, d, {biome, elevation, offset}) {
 		const yOffsetAdj = offset ? HALF_HEX_TILE_HEIGHT : 0;
 		const yDepthAdj = d * HEX_TILE_THICKNESS;
+		const biomeWallData = wallData[`${terrainConversionKey[biome] || biome}`];
 
 		return {
-			...testHexDepth44BodyData,
+			...(elevation > 0 && biomeWallData ? biomeWallData : testHexWall44BodyData),
 			x: x * testHexCell44BodyData.width + x - (x * HALF_HEX_TILE_HEIGHT),
-			y: y * testHexCell44BodyData.height + testHexDepth44BodyData.height - 2 + yOffsetAdj - yDepthAdj,
+			y: y * testHexCell44BodyData.height + testHexWall44BodyData.height - 2 + yOffsetAdj - yDepthAdj,
 			layer: `elev:${d - 1}`
 		};
 	}
@@ -273,6 +303,8 @@ module.exports = class MapInstantiator {
 			for(let d = elevation, floor = elevation - southElevDiff; d > floor; d--) {
 				// TODO: have blue depth pieces for sub-zero elevation (9 or 10 shades), but not if on bottom edge
 				const depthData = this.constructor.getDepthData(x, y, d, {
+					biome: cell.biome,
+					elevation: cell.elevation,
 					offset: metaPoint.offset
 				});
 				const depthBody = new Body(depthData);

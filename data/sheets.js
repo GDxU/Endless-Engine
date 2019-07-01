@@ -30,11 +30,27 @@ const terrains = [
 	'tundra',
 	'woodland'
 ];
+const terrainWalls = [
+	'boreal',
+	'desert',
+	'hot-desert',
+	'ice',
+	'moonscape',
+	'savanna',
+	'scrubland',
+	'shrubland',
+	'tundra'
+];
 
 for(let i = 0; i < terrains.length; i++) {
 	const terrain = terrains[i];
 
 	data[`hex-cell-44-${terrain}-top`] = `hex-cell-44-${terrain}-top.png`;
+}
+for(let i = 0; i < terrainWalls.length; i++) {
+	const terrainWall = terrainWalls[i];
+
+	data[`hex-cell-44-${terrainWall}-wall`] = `hex-cell-44-${terrainWall}-wall.png`;
 }
 
 module.exports = data;

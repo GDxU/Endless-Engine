@@ -99,7 +99,7 @@ const data = {
 			}
 		}
 	},
-	'hex-cell-44-water-top': 	{
+	'hex-cell-44-water-top': {
 		ticksPerFrame: 10,
 		loop: false,
 		tiled: false,
@@ -148,6 +148,17 @@ const terrains = [
 	'tundra',
 	'woodland'
 ];
+const terrainWalls = [
+	'boreal',
+	'desert',
+	'hot-desert',
+	'ice',
+	'moonscape',
+	'savanna',
+	'scrubland',
+	'shrubland',
+	'tundra'
+];
 
 for(let i = 0; i < terrains.length; i++) {
 	const terrain = terrains[i];
@@ -162,6 +173,24 @@ for(let i = 0; i < terrains.length; i++) {
 			'normal': {
 				'e': {
 					frames: [`hex-cell-44-${terrain}-top`]
+				}
+			}
+		}
+	};
+}
+for(let i = 0; i < terrainWalls.length; i++) {
+	const terrainWall = terrainWalls[i];
+
+	data[`hex-cell-44-${terrainWall}-wall`] = {
+		ticksPerFrame: 10,
+		loop: false,
+		tiled: false,
+		padding: 0,
+		layer: 'layer-2',
+		frameData: {
+			'normal': {
+				'e': {
+					frames: [`hex-cell-44-${terrainWall}-wall`]
 				}
 			}
 		}

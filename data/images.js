@@ -33,11 +33,27 @@ const terrains = [
 	'tundra',
 	'woodland'
 ];
+const terrainWalls = [
+	'boreal',
+	'desert',
+	'hot-desert',
+	'ice',
+	'moonscape',
+	'savanna',
+	'scrubland',
+	'shrubland',
+	'tundra'
+];
 
 for(let i = 0; i < terrains.length; i++) {
 	const terrain = terrains[i];
 
 	images[`hex-cell-44-${terrain}-top`] = {sheet: `hex-cell-44-${terrain}-top`, x: 0, y: 0, w: 44, h: 26};
+}
+for(let i = 0; i < terrainWalls.length; i++) {
+	const terrainWall = terrainWalls[i];
+
+	images[`hex-cell-44-${terrainWall}-wall`] = {sheet: `hex-cell-44-${terrainWall}-wall`, x: 0, y: 0, w: 44, h: 16};
 }
 
 Object.keys(fonts).forEach(name => {

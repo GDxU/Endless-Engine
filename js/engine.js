@@ -174,11 +174,17 @@ module.exports = class Engine {
 			const vport = engine.viewports.getItem('test-viewport-2');
 			vport.updateView({x: vport.view.position.x, y: vport.view.position.y + 20});
 			mi.update(vport.view.position.x + Math.floor(vport.width / 2), vport.view.position.y + Math.floor(vport.height / 2));
+
+			const vport2 = engine.viewports.getItem('test-viewport-1');
+			vport2.updateView({x: vport2.view.position.x, y: vport2.view.position.y + 20});
 		}, key: 's'});
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
 			const vport = engine.viewports.getItem('test-viewport-2');
 			vport.updateView({x: vport.view.position.x, y: vport.view.position.y - 20});
 			mi.update(vport.view.position.x + Math.floor(vport.width / 2), vport.view.position.y + Math.floor(vport.height / 2));
+
+			const vport2 = engine.viewports.getItem('test-viewport-1');
+			vport2.updateView({x: vport2.view.position.x, y: vport2.view.position.y - 20});
 		}, key: 'w'});
 		testBodyThree.addKeyInput('keydown', {callback(self, key) {
 			const vport = engine.viewports.getItem('test-viewport-2');
